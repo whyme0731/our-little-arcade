@@ -18,7 +18,7 @@ window.ARCADE_CONFIG = {
   metered: { app: '', apiKey: '' },      // e.g. { app: 'lovearcade', apiKey: 'abc123...' }
 
   // ---- Option B: your own relay (leave empty if you use Option A) ----
-  relay: '',                             // e.g. 'love-arcade-relay.onrender.com'  (no https://)
+  relay: 'love-arcade-relay.onrender.com',   // your relay (no https://)
   relaySecure: true,                     // false only for testing on localhost
   peerKey: 'lovearcade'                  // must match PEER_KEY on the relay
 };
