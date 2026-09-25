@@ -341,11 +341,11 @@ header{row-gap:8px}
     <div id="hostBox" class="hidden view-in" style="margin-top:18px">
       <p>Send this code to your love:</p>
       <div class="code" id="roomCode">----</div>
-      <p class="note">Waiting for them to join… keep this page open 🌸</p>
+      <p class="note">Waiting for them to join… keep this page open 🌸<br>🔒 Once they join, the room locks — nobody else can get in.</p>
     </div>
     <div id="joinBox" class="hidden view-in" style="margin-top:18px">
       <div class="row" style="max-width:340px;margin:0 auto;flex-wrap:nowrap">
-        <input id="codeIn" placeholder="ROOM CODE" maxlength="4" style="text-transform:uppercase;text-align:center;letter-spacing:4px">
+        <input id="codeIn" placeholder="ROOM CODE" maxlength="6" autocomplete="off" autocapitalize="characters" style="text-transform:uppercase;text-align:center;letter-spacing:4px">
         <button class="btn mint" id="goBtn">Go!</button>
       </div>
     </div>
@@ -516,25 +516,45 @@ const me={name:LS.get('lg_name',''),nick:LS.get('lg_nick','')};
 const Net={peer:null,conn:null,role:'host',connected:false,handlers:{},partner:'Sweetheart',realName:'',code:null,tries:0,
   on(t,f){this.handlers[t]=f},
   send(t,d){if(this.conn&&this.connected)try{this.conn.send({t,d})}catch{}},
-  setup(c){
+  /* ---- 🔒 ROOM LOCK ----
+     • A connection only counts once BOTH sides have exchanged a valid 'hello' (strangers / bots that don't speak our protocol are dropped after 6s).
+     • Once two people are connected the room is LOCKED: any extra connection is turned away ('busy') and can never kick your partner out.
+     • If the current connection has genuinely dropped (network switch), the room re-opens so your partner can come straight back.
+     • Room codes are 6 characters (~887 million combinations), so they can't be guessed. */
+  alive(){const c=this.conn;if(!this.connected||!c||!c.open)return false;const s=c.peerConnection&&c.peerConnection.iceConnectionState;return!['disconnected','failed','closed'].includes(s)},
+  accept(c,p){   // host side: every incoming connection comes through here
+    if(this.alive()){c.on('open',()=>{try{c.send({t:'busy',d:{}})}catch{}setTimeout(()=>{try{c.close()}catch{}},400)});c.on('error',()=>{});toast('🔒 Someone else tried to join your room — blocked');return}
+    this.peer=p;this.setup(c,true)},
+  setup(c,incoming){
     if(this.conn&&this.conn!==c){try{this.conn.close()}catch{}}
-    this.conn=c;
-    c.on('open',()=>{this.connected=true;this.tries=0;setStatus();this.send('hello',{name:me.name});onConnected()});
-    c.on('data',m=>{if(m&&m.t&&this.handlers[m.t])try{this.handlers[m.t](m.d)}catch(e){console.error(e)}});
-    c.on('close',()=>{if(this.conn!==c)return;this.connected=false;partnerAt=null;setStatus();renderJoinBar();toast('💔 Connection dropped — reconnecting…');
+    this.conn=c;c._ok=false;
+    c.on('open',()=>{
+      if(incoming){c._hs=setTimeout(()=>{if(!c._ok){try{c.close()}catch{}if(this.conn===c)this.conn=null}},6000)}    // must say hello quickly
+      else this.send0(c,'hello',{name:me.name,v:1})});
+    c.on('data',m=>{if(!m||!m.t)return;
+      if(!c._ok){
+        if(m.t==='busy'&&!incoming){this.conn=null;try{c.close()}catch{}
+          this.tries=(this.tries||0)+1;if(this.tries<8){toast('Room is busy for a moment — retrying…');setTimeout(()=>{if(!this.connected)this.reconnect()},4000)}else{toast('🔒 That room already has two people in it.');this.tries=99}return}
+        if(m.t==='hello'&&m.d&&typeof m.d.name==='string'&&m.d.name.length<=40){c._ok=true;clearTimeout(c._hs);this.connected=true;this.tries=0;
+          if(incoming)this.send0(c,'hello',{name:me.name,v:1});setStatus();onConnected()}
+        else return}
+      if(this.handlers[m.t])try{this.handlers[m.t](m.d)}catch(e){console.error(e)}});
+    c.on('close',()=>{if(this.conn!==c)return;if(!c._ok){this.conn=null;return}
+      this.connected=false;partnerAt=null;setStatus();renderJoinBar();toast('💔 Connection dropped — reconnecting…');
       if(this.role==='guest'&&this.code&&this.tries<12){this.tries++;setTimeout(()=>{if(!this.connected)this.reconnect()},2000)}});
     c.on('error',()=>{});
   },
+  send0(c,t,d){try{c.send({t,d})}catch{}},
   /* Signaling servers, in order of preference: YOUR relay (if configured in config.js), then the free public PeerJS cloud.
      The host registers the room on ALL of them; the guest tries them one after another — so a sleeping/offline relay never blocks you. */
   servers(){const s=[];if(CFG.relay){const[h,p]=String(CFG.relay).split(':');s.push({name:'relay',host:h,port:+p||(CFG.relaySecure?443:80),path:'/peerjs',secure:CFG.relaySecure,key:CFG.peerKey})}s.push({name:'public'});return s},
   peerOpts(spec){const o={config:{iceServers:this.ice,sdpSemantics:'unified-plan'}};if(spec.host)Object.assign(o,{host:spec.host,port:spec.port,path:spec.path,secure:spec.secure,key:spec.key});return o},
-  host(){const code=Array.from({length:4},()=>'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*31)]).join('');
+  host(){const code=Array.from({length:6},()=>'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*31)]).join('');
     this.role='host';this.code=code;$('#roomCode').textContent=code;
     this.hostPeers.forEach(p=>{try{p.destroy()}catch{}});this.hostPeers=[];
     Promise.race([this.iceReady,new Promise(r=>setTimeout(r,4000))]).then(()=>{if(this.code!==code||this.role!=='host')return;
       this.servers().forEach(spec=>{const p=new Peer('ola-'+code,this.peerOpts(spec));p._spec=spec.name;this.hostPeers.push(p);
-        p.on('connection',c=>{this.peer=p;this.setup(c)});
+        p.on('connection',c=>this.accept(c,p));
         p.on('disconnected',()=>{try{p.reconnect()}catch{}});
         p.on('error',e=>{if(e.type==='unavailable-id'){if(this.code===code)this.host()}
           else if(spec.name==='public'&&!['disconnected','network','server-error','socket-error','socket-closed'].includes(e.type))toast('Network hiccup: '+e.type)})});
@@ -550,7 +570,7 @@ const Net={peer:null,conn:null,role:'host',connected:false,handlers:{},partner:'
         const spec=specs[i++];let moved=false;const p=new Peer(undefined,this.peerOpts(spec));this.peer=p;
         const next=e=>{if(moved||this.connected)return;moved=true;lastErr=e||lastErr;clearTimeout(t);try{p.destroy()}catch{}attempt()};
         const t=setTimeout(()=>next('timeout'),spec.name==='relay'?12000:15000);
-        p.on('open',()=>{const c=p.connect('ola-'+me2,{reliable:true});this.setup(c);c.on('open',()=>clearTimeout(t))});
+        p.on('open',()=>{const c=p.connect('ola-'+me2,{reliable:true});this.setup(c,false)});   // the attempt timer stays armed until the host's hello arrives
         p.on('error',e=>{if(e.type==='disconnected')return;next(e.type)})};
       attempt()})},
   reconnect(){this.join(this.code)}};
@@ -565,7 +585,7 @@ Net.iceReady=(async()=>{if(!CFG.relay)return;try{const ctl=new AbortController()
   if(j&&Array.isArray(j.iceServers)&&j.iceServers.length){Net.ice=j.iceServers;Net.hasTurn=!!j.turn}}catch{}})();
 function pn(){return me.nick||Net.realName||'your love'}
 function setStatus(){$('#dot').classList.toggle('on',Net.connected);
-  $('#statusTxt').textContent=Net.connected?('Playing with '+Net.partner):'Not connected'}
+  $('#statusTxt').textContent=Net.connected?('Playing with '+Net.partner+' 🔒'):'Not connected'}
 
 Net.on('hello',d=>{Net.realName=d.name||'';Net.partner=me.nick||Net.realName||'Sweetheart';setStatus();toast('💞 '+Net.partner+' is here!');sfx.love();confetti(50);vibe([60,40,60]);renderHub()});
 Net.on('react',e=>{floatEmoji(e);sfx.love();vibe(40)});
@@ -583,7 +603,7 @@ function needName(){const n=$('#nameIn').value.trim();if(!n){toast('Tell me your
 $('#nameIn').value=me.name;$('#nickIn').value=me.nick;
 $('#createBtn').onclick=()=>{if(!needName())return;hide($('#joinBox'));show($('#hostBox'));if(!Net.peer)Net.host()};
 $('#joinBtn').onclick=()=>{if(!needName())return;hide($('#hostBox'));show($('#joinBox'));$('#codeIn').focus()};
-$('#goBtn').onclick=()=>{const c=$('#codeIn').value.trim();if(c.length<4){toast('Code has 4 characters');return}Net.tries=0;toast('Connecting… 💫');Net.join(c)};
+$('#goBtn').onclick=()=>{const c=$('#codeIn').value.trim();if(c.length<6){toast('The room code has 6 characters');return}Net.tries=0;toast('Connecting… 💫');Net.join(c)};
 $('#codeIn').onkeydown=e=>{if(e.key==='Enter')$('#goBtn').click()};
 $('#soloBtn').onclick=()=>{if(!needName())return;showHub()};
 function showTab(t){if(!$(`.tabpane[data-t="${t}"]`))t='today';LS.set('lg_tab',t);

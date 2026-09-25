@@ -29,6 +29,9 @@ relay: 'love-arcade-relay.onrender.com',   // your relay's address, no https://
 ```
 commit and push again. Until then (or if the relay is asleep/offline) the site automatically falls back to the free public server — it never breaks.
 
+## 🔒 Room lock
+Room codes are 6 characters (about 887 million combinations). Once the two of you are connected the room is **locked**: anyone else who tries to join is turned away and can never kick your partner out. Connections that don't complete the hello handshake within 6 seconds are dropped. If your connection genuinely drops (Wi-Fi switch), the room re-opens so your partner can walk straight back in.
+
 ## Video calls 📹
 Tap **📹** at the top while connected. Your love taps **Answer**. The call bar is docked at the top and pushes the page down, so it never covers your games. ↕️ changes size, ▴ shrinks it, 🎤/📷 mute, 📵 hangs up. Camera/microphone need the `https://` link.
 
