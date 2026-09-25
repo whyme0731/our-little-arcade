@@ -580,7 +580,14 @@ Net.hostPeers=[];
 Net.ice=[{urls:['stun:stun.l.google.com:19302','stun:stun.cloudflare.com:3478']}];
 Net.hasTurn=false;
 /* Fetch TURN credentials from YOUR relay (this also wakes a sleeping free instance). Never blocks the app. */
-Net.iceReady=(async()=>{if(!CFG.relay)return;try{const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),10000);
+Net.iceReady=(async()=>{
+  /* Option A (no server, no card): TURN servers straight from config.js — either a ready list, or a free Metered account */
+  if(Array.isArray(CFG.iceServers)&&CFG.iceServers.length){Net.ice=[...Net.ice,...CFG.iceServers];Net.hasTurn=CFG.iceServers.some(s=>[].concat(s.urls||[]).some(u=>/^turns?:/.test(u)))}
+  if(CFG.metered&&CFG.metered.app&&CFG.metered.apiKey){try{const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),8000);
+    const r=await fetch(`https://${CFG.metered.app}.metered.live/api/v1/turn/credentials?apiKey=${encodeURIComponent(CFG.metered.apiKey)}`,{signal:ctl.signal});clearTimeout(tm);const a=await r.json();
+    if(Array.isArray(a)&&a.length){Net.ice=[{urls:['stun:stun.l.google.com:19302','stun:stun.cloudflare.com:3478']},...a];Net.hasTurn=a.some(s=>[].concat(s.urls||[]).some(u=>/^turns?:/.test(u)))}}catch{}}
+  /* Option B: your own relay server (see love-arcade-relay) */
+  if(!CFG.relay)return;try{const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),10000);
   const r=await fetch((CFG.relaySecure?'https://':'http://')+CFG.relay+'/turn',{signal:ctl.signal});clearTimeout(tm);const j=await r.json();
   if(j&&Array.isArray(j.iceServers)&&j.iceServers.length){Net.ice=j.iceServers;Net.hasTurn=!!j.turn}}catch{}})();
 function pn(){return me.nick||Net.realName||'your love'}

@@ -17,7 +17,16 @@ index.html  config.js  extras.js  garden.js  lovegarden.js  sync.js  videocall.j
 3. On GitHub: repo **Settings → Pages → Build and deployment → Deploy from a branch → `main` / `(root)` → Save**.
 4. After ~1 minute your link is `https://<your-username>.github.io/our-little-arcade/` — send it to her. (It's `https`, which video calls need.)
 
-## 2) Your own relay (matchmaking + video that works on every network)
+## 2) Make video work on every network — FREE, NO CARD, NO SERVER (recommended)
+1. Sign up free at **metered.ca** (the free plan needs no credit card) and create an app.
+2. Copy your **app name** (the part before `.metered.live`) and your **API key**.
+3. In `config.js` fill in:
+   ```js
+   metered: { app: 'your-app-name', apiKey: 'your-api-key' },
+   ```
+4. `git add -A`, `git commit -m "Add TURN"`, `git push` — done. (Because the site's code is public on GitHub, the key can be seen; on the free plan the worst case is that someone uses up the small monthly allowance — you can't be charged, since no card is attached.)
+
+## 2b) Alternative: your own relay (matchmaking + video that works on every network)
 The site connects you two directly (peer to peer). A tiny separate service — **`love-arcade-relay`** (its own folder/repo, its own Render service, nothing shared with any other app) — makes that reliable:
 - it introduces your two browsers, so you no longer depend on the free public server, and
 - it hands out **TURN** credentials so **video calls work on strict Wi-Fi, mobile networks and VPNs**.
