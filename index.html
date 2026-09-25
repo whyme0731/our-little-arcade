@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffe4f1">
+<title>Our Little Arcade 💕</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="config.js"></script>
+<link rel="stylesheet" href="extras.css">
+<style>
+:root{
+  --bg1:#ffe4f1; --bg2:#e6dcff; --card:#ffffffcc; --ink:#4a2c5a; --pink:#ff6fa5; --pink2:#ff9ec4;
+  --purple:#9b7bff; --mint:#5fd3b3; --yellow:#ffd766; --blue:#6ec3ff; --shadow:0 8px 0 #0000001a;
+  --ease:cubic-bezier(.2,.8,.2,1);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;font-family:'Fredoka',system-ui,sans-serif;color:var(--ink);scroll-behavior:smooth}
+body{background:linear-gradient(160deg,var(--bg1),var(--bg2),#ffe9f5);background-size:200% 200%;animation:bgShift 18s ease infinite;background-attachment:fixed;overflow-x:hidden}
+@keyframes bgShift{50%{background-position:100% 100%}}
+button{font-family:inherit;cursor:pointer;border:0;color:inherit;touch-action:manipulation}
+button:disabled{cursor:not-allowed}
+h1,h2,h3{margin:.2em 0}
+.hidden{display:none!important}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+#bg{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+#bg span{position:absolute;bottom:-40px;animation:floatUp linear infinite;opacity:.5;will-change:transform}
+@keyframes floatUp{to{transform:translateY(-115vh) rotate(40deg)}}
+
+.wrap{position:relative;z-index:1;max-width:1000px;margin:0 auto;padding:16px;padding-bottom:110px}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.logo{font-size:clamp(26px,5vw,40px);font-weight:700;color:var(--pink);text-shadow:3px 3px 0 #fff}
+.logo small{font-family:'Caveat',cursive;font-size:.55em;color:var(--purple);display:block;margin-top:-6px}
+.pill{background:#fff;border-radius:99px;padding:6px 14px;font-weight:500;box-shadow:var(--shadow);display:inline-flex;gap:8px;align-items:center}
+.dot{width:10px;height:10px;border-radius:50%;background:#ccc;transition:background .3s}
+.dot.on{background:var(--mint);box-shadow:0 0 0 4px #5fd3b344;animation:pulse 1.4s infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 8px #5fd3b322}}
+.iconbtn{background:#fff;border-radius:50%;width:38px;height:38px;font-size:18px;box-shadow:var(--shadow);transition:transform .2s var(--ease)}
+.iconbtn:hover{transform:scale(1.15) rotate(-8deg)}
+
+.btn{background:var(--pink);color:#fff;font-weight:600;font-size:17px;padding:12px 22px;border-radius:18px;box-shadow:0 5px 0 #d94a83;transition:transform .18s var(--ease),box-shadow .18s var(--ease),filter .2s}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 #d94a83}
+.btn:hover:not(:disabled){transform:translateY(-2px) rotate(-1deg);filter:brightness(1.05)}
+.btn.alt{background:var(--purple);box-shadow:0 5px 0 #6f4fd6}.btn.alt:active{box-shadow:0 1px 0 #6f4fd6}
+.btn.mint{background:var(--mint);box-shadow:0 5px 0 #37a68a}.btn.mint:active{box-shadow:0 1px 0 #37a68a}
+.btn.ghost{background:#fff;color:var(--ink);box-shadow:0 5px 0 #0000001a}
+.btn.small{font-size:14px;padding:8px 14px;border-radius:14px}
+.btn:disabled{opacity:.5;filter:grayscale(.4)}
+input,textarea,select{font-family:inherit;font-size:16px;padding:10px 14px;border-radius:14px;border:3px solid #fff;background:#fffc;color:var(--ink);width:100%;outline:none;transition:border-color .2s,box-shadow .2s}
+input:focus,textarea:focus{border-color:var(--pink2);box-shadow:0 0 0 4px #ff9ec455}
+.panel{background:var(--card);backdrop-filter:blur(6px);border-radius:26px;padding:22px;box-shadow:var(--shadow);margin:16px 0}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.center{text-align:center}
+.note{font-size:14px;opacity:.75}
+.view-in{animation:viewIn .45s var(--ease) both}
+@keyframes viewIn{from{opacity:0;transform:translateY(18px) scale(.98)}}
+.stagger>*{animation:viewIn .5s var(--ease) both}
+.stagger>*:nth-child(1){animation-delay:.03s}.stagger>*:nth-child(2){animation-delay:.08s}.stagger>*:nth-child(3){animation-delay:.13s}.stagger>*:nth-child(4){animation-delay:.18s}.stagger>*:nth-child(5){animation-delay:.23s}.stagger>*:nth-child(6){animation-delay:.28s}.stagger>*:nth-child(7){animation-delay:.33s}.stagger>*:nth-child(8){animation-delay:.38s}
+
+#connect .code{font-size:38px;letter-spacing:6px;font-weight:700;color:var(--purple);background:#fff;padding:6px 18px;border-radius:16px;display:inline-block;user-select:all}
+.bounce{animation:bounce 2s infinite}
+@keyframes bounce{50%{transform:translateY(-8px)}}
+.big-heart{font-size:72px;display:inline-block;animation:beatH 1.3s infinite}
+@keyframes beatH{0%,100%{transform:scale(1)}15%{transform:scale(1.25)}30%{transform:scale(1)}45%{transform:scale(1.2)}}
+
+/* hub */
+.hello{display:flex;gap:14px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+.hello h2{font-size:26px}
+.daynote{font-family:'Caveat',cursive;font-size:24px;color:var(--purple);line-height:1.1}
+.meter{min-width:220px;flex:1}
+.meter .bar{height:16px;border-radius:99px;background:#fff;overflow:hidden;box-shadow:inset 0 2px 0 #0000000f}
+.meter .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--pink),var(--purple));border-radius:99px;transition:width .8s var(--ease)}
+.sec{font-size:22px;margin:24px 4px 8px;color:var(--pink);text-shadow:2px 2px 0 #fff}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
+.game{background:#fff;border-radius:24px;padding:18px;text-align:center;box-shadow:var(--shadow);transition:transform .25s var(--ease);position:relative;overflow:hidden;cursor:pointer;user-select:none}
+.game:hover{transform:translateY(-6px) rotate(-1.5deg)}
+.game:active{transform:scale(.96)}
+.game .emoji{font-size:50px;display:block;animation:bounce 3s infinite}
+.game:nth-child(2n) .emoji{animation-delay:.6s}.game:nth-child(3n) .emoji{animation-delay:1.1s}
+.game h3{font-size:19px}
+.game p{margin:4px 0 0;font-size:14px;opacity:.75}
+.tag{position:absolute;top:10px;right:10px;background:var(--yellow);border-radius:99px;font-size:11px;padding:2px 9px;font-weight:600}
+.feature{background:linear-gradient(135deg,#ff9ec4,#9b7bff);color:#fff;display:flex;align-items:center;gap:18px;text-align:left;padding:22px}
+.feature .emoji{font-size:64px}.feature h3{font-size:24px}.feature p{opacity:.95;font-size:16px}
+.feature:hover{transform:translateY(-4px) scale(1.01)}
+.feature .tag{background:#fff;color:var(--pink)}
+
+.countdown{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.cd{background:#fff;border-radius:18px;padding:10px 16px;min-width:74px;text-align:center;box-shadow:var(--shadow)}
+.cd b{font-size:32px;display:block;color:var(--pink)}
+.cd span{font-size:12px;opacity:.7}
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:700px){.twocol{grid-template-columns:1fr}}
+
+/* game frame */
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.status{font-size:20px;font-weight:600;text-align:center;margin:8px 0;min-height:32px}
+.ttt{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:360px;margin:12px auto}
+.ttt button{aspect-ratio:1;background:#fff;border-radius:20px;font-size:clamp(40px,12vw,64px);font-weight:700;box-shadow:var(--shadow);transition:background .2s,transform .15s}
+.ttt button:hover:not(:disabled){background:#fff0f7;transform:scale(1.04)}
+.ttt button.win{background:var(--yellow);animation:wiggle .5s infinite}
+@keyframes wiggle{25%{transform:rotate(-6deg)}75%{transform:rotate(6deg)}}
+.pop{animation:pop .35s var(--ease)}
+@keyframes pop{0%{transform:scale(.2)}70%{transform:scale(1.2)}}
+
+.c4{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;background:var(--purple);padding:10px;border-radius:22px;max-width:440px;margin:12px auto;box-shadow:var(--shadow)}
+.c4 .cell{aspect-ratio:1;background:#fff;border-radius:50%;position:relative;cursor:pointer;transition:background .15s}
+.c4 .cell:hover{background:#fff0f7}
+.c4 .cell.r::after,.c4 .cell.y::after{content:"";position:absolute;inset:6%;border-radius:50%}
+.c4 .cell.new::after{animation:drop .55s cubic-bezier(.5,0,.8,1.2)}
+.c4 .cell.r::after{background:var(--pink)}.c4 .cell.y::after{background:var(--yellow)}
+.c4 .cell.w{outline:5px solid #fff;animation:wiggle .5s infinite}
+@keyframes drop{from{transform:translateY(calc(var(--drop,4)*-100%))}}
+
+.mem{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:440px;margin:12px auto}
+.mcard{aspect-ratio:1;perspective:600px;background:none;padding:0}
+.mcard .in{position:relative;width:100%;height:100%;transition:transform .5s var(--ease);transform-style:preserve-3d}
+.mcard.f .in,.mcard.m .in{transform:rotateY(180deg)}
+.mcard .fr,.mcard .bk{position:absolute;inset:0;border-radius:18px;backface-visibility:hidden;display:flex;align-items:center;justify-content:center;font-size:clamp(28px,8vw,44px);overflow:hidden;box-shadow:var(--shadow)}
+.mcard .bk{background:linear-gradient(135deg,var(--pink2),var(--purple));color:#fff}
+.mcard .fr{background:#fff;transform:rotateY(180deg)}
+.mcard .fr img{width:100%;height:100%;object-fit:cover}
+.mcard.m .fr{outline:4px solid var(--mint)}
+.scores{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin:8px 0}
+.score{background:#fff;border-radius:16px;padding:6px 16px;box-shadow:var(--shadow);font-weight:600;transition:all .3s var(--ease)}
+.score.turn{background:var(--yellow);transform:scale(1.08)}
+.thumbs{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.thumbs img{width:60px;height:60px;object-fit:cover;border-radius:14px;border:3px solid #fff}
+
+.opt{display:block;width:100%;text-align:left;background:#fff;border-radius:16px;padding:14px 18px;margin:10px 0;font-size:18px;box-shadow:var(--shadow);transition:all .2s var(--ease)}
+.opt:hover:not(:disabled){background:#fff0f7;transform:translateX(6px)}
+.opt.good{background:var(--mint);color:#fff}.opt.bad{background:#ff7a8a;color:#fff}
+.qedit{background:#fff;border-radius:18px;padding:14px;margin:12px 0;box-shadow:var(--shadow)}
+.qedit input{margin:4px 0}
+.qedit label{display:flex;gap:8px;align-items:center}
+.qedit input[type=radio]{width:22px;height:22px;flex:none}
+.progress{height:12px;border-radius:99px;background:#fff;overflow:hidden}
+.progress i{display:block;height:100%;background:linear-gradient(90deg,var(--pink),var(--purple));transition:width .5s var(--ease)}
+
+.wyr{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
+.wyr button{background:#fff;border-radius:22px;padding:26px 14px;font-size:19px;font-weight:600;box-shadow:var(--shadow);min-height:140px;transition:all .25s var(--ease)}
+.wyr button:hover:not(:disabled){transform:translateY(-4px)}
+.wyr button.picked{outline:5px solid var(--pink);background:#fff0f7}
+.wyr button.same{background:var(--mint);color:#fff}
+@media(max-width:520px){.wyr{grid-template-columns:1fr}.wyr button{min-height:90px}}
+
+.paper{background:#fffbe8;border-radius:8px 8px 22px 8px;padding:26px 22px;font-family:'Caveat',cursive;font-size:30px;line-height:1.15;box-shadow:var(--shadow);transform:rotate(-2deg);margin:16px auto;max-width:420px;animation:pop .4s}
+.jar{font-size:96px;display:block;cursor:pointer;animation:bounce 2.5s infinite;user-select:none}
+
+#wheelbox{position:relative;width:min(340px,86vw);margin:10px auto}
+#wheel{width:100%;height:auto;border-radius:50%;box-shadow:var(--shadow);border:6px solid #fff}
+#pointer{position:absolute;top:-14px;left:50%;transform:translateX(-50%);font-size:34px;z-index:2}
+.scratchbox{position:relative;width:min(340px,88vw);height:190px;margin:14px auto;border-radius:22px;overflow:hidden;box-shadow:var(--shadow)}
+.scratchbox .msg{position:absolute;inset:0;background:#fffbe8;display:flex;align-items:center;justify-content:center;text-align:center;padding:16px;font-family:'Caveat',cursive;font-size:30px;line-height:1.1}
+.scratchbox canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair}
+
+/* Deep Talk */
+.chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin:14px 0}
+.chip{background:#fff;border-radius:20px;padding:16px 10px;text-align:center;box-shadow:var(--shadow);font-weight:600;transition:all .25s var(--ease)}
+.chip:hover{transform:translateY(-5px) rotate(-2deg);background:#fff0f7}
+.chip b{display:block;font-size:34px}.chip small{font-weight:400;opacity:.7}
+.qcard{background:linear-gradient(135deg,#fff,#fff0f7);border-radius:26px;padding:26px 22px;text-align:center;box-shadow:var(--shadow);margin:14px 0;animation:viewIn .5s var(--ease)}
+.qcard .cat{display:inline-block;background:var(--yellow);border-radius:99px;padding:2px 14px;font-size:13px;font-weight:600;margin-bottom:8px}
+.qcard h2{font-size:clamp(20px,4.5vw,28px);line-height:1.25}
+.bubbles{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
+@media(max-width:640px){.bubbles{grid-template-columns:1fr}}
+.bubble{background:#fff;border-radius:22px;padding:18px;box-shadow:var(--shadow);animation:flipIn .7s var(--ease) both;white-space:pre-wrap;word-break:break-word}
+.bubble.b2{animation-delay:.35s;background:#f3edff}
+.bubble h4{margin:0 0 6px;color:var(--pink)}.bubble.b2 h4{color:var(--purple)}
+.bubble p{margin:0;font-size:18px;line-height:1.35}
+@keyframes flipIn{from{opacity:0;transform:perspective(600px) rotateX(-70deg) translateY(20px)}}
+.waiting{background:#fff;border-radius:18px;padding:14px;text-align:center;font-weight:500;animation:pulseBg 2s infinite}
+@keyframes pulseBg{50%{background:#fff0f7}}
+.hist{background:#fff;border-radius:18px;padding:14px;margin:10px 0;box-shadow:var(--shadow)}
+.hist small{opacity:.6}.hist p{margin:4px 0}
+
+/* Hangman */
+.hg-word{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:16px 0}
+.hg-word span{width:36px;height:46px;border-bottom:4px solid var(--purple);font-size:32px;font-weight:700;text-align:center;color:var(--pink);animation:pop .3s}
+.lives{font-size:30px;text-align:center;letter-spacing:4px}
+.kb{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-width:520px;margin:10px auto}
+.kb button{width:40px;height:44px;border-radius:12px;background:#fff;font-weight:600;font-size:18px;box-shadow:0 4px 0 #0000001a;transition:transform .12s}
+.kb button:hover:not(:disabled){transform:translateY(-3px)}
+.kb button.ok{background:var(--mint);color:#fff}.kb button.no{background:#ff9aa8;color:#fff}
+.kb button:disabled{opacity:.85}
+
+/* Drawing */
+#dcv{width:100%;aspect-ratio:3/2;background:#fffdf5;border-radius:22px;box-shadow:var(--shadow);touch-action:none;cursor:crosshair;display:block}
+.pal{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:10px 0;align-items:center}
+.sw{width:34px;height:34px;border-radius:50%;border:4px solid #fff;box-shadow:var(--shadow);transition:transform .15s}
+.sw.sel{transform:scale(1.3);border-color:var(--ink)}
+.stamp{background:#fff;border-radius:12px;width:38px;height:38px;font-size:20px;box-shadow:0 4px 0 #0000001a}
+.stamp.sel{outline:3px solid var(--pink)}
+input[type=range]{padding:0;height:auto;width:110px;accent-color:var(--pink)}
+
+/* Battleship */
+.bs{display:grid;grid-template-columns:repeat(8,1fr);gap:3px;background:#a9dcff;padding:6px;border-radius:16px;max-width:320px;margin:6px auto;box-shadow:var(--shadow)}
+.bs div{aspect-ratio:1;background:#e8f6ff;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:clamp(12px,3.5vw,18px);transition:background .2s}
+.bs.enemy div:not(.h):not(.m):hover{background:#fff0f7;cursor:crosshair}
+.bs .ship{background:#8aa4ff}.bs .h{background:#ffb3c1}.bs .m{background:#d7e9f5}
+.bs.dim{opacity:.6}
+
+/* RPS */
+.rps{display:flex;gap:14px;justify-content:center;margin:16px 0;flex-wrap:wrap}
+.rps button{font-size:52px;background:#fff;border-radius:24px;width:96px;height:96px;box-shadow:var(--shadow);transition:all .2s var(--ease)}
+.rps button:hover:not(:disabled){transform:translateY(-6px) rotate(-5deg)}
+.rps button.sel{outline:5px solid var(--pink)}
+.arena{display:flex;justify-content:center;gap:30px;font-size:80px;margin:10px 0;min-height:100px}
+.arena .shake{animation:shake .4s 3}
+@keyframes shake{25%{transform:translateY(-22px) rotate(-10deg)}75%{transform:translateY(8px) rotate(10deg)}}
+
+/* Heartbeat */
+#bigheart{font-size:min(38vw,180px);background:none;display:block;margin:10px auto;transition:transform .12s;filter:drop-shadow(0 10px 0 #0000001a);user-select:none}
+#bigheart:active{transform:scale(.88)}
+#bigheart.pulse{animation:beatH .6s}
+#bigheart.theirs{animation:theirBeat .6s}
+@keyframes theirBeat{30%{transform:scale(1.3) rotate(-6deg);filter:hue-rotate(60deg) drop-shadow(0 10px 0 #0000001a)}}
+.ring{position:fixed;border:6px solid var(--pink);border-radius:50%;pointer-events:none;z-index:25;animation:ring 1s ease-out forwards}
+@keyframes ring{from{width:20px;height:20px;opacity:1;margin:-10px}to{width:400px;height:400px;opacity:0;margin:-200px}}
+
+/* reactions & toasts */
+#reactions{position:fixed;bottom:calc(12px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:#fff;border-radius:99px;padding:6px 10px;display:flex;gap:2px;box-shadow:0 6px 18px #0002;z-index:20;max-width:96vw}
+#reactions button{background:none;font-size:26px;border-radius:50%;width:44px;height:44px;transition:transform .15s var(--ease)}
+#reactions button:hover{transform:scale(1.3) rotate(-8deg)}
+#reactions button:active{transform:scale(.85)}
+.float{position:fixed;font-size:44px;z-index:30;pointer-events:none;animation:rise 2.2s ease-out forwards;will-change:transform}
+@keyframes rise{to{transform:translateY(-70vh) scale(1.6) rotate(20deg);opacity:0}}
+.plus{position:fixed;z-index:31;font-weight:700;font-size:22px;color:var(--pink);text-shadow:2px 2px 0 #fff;pointer-events:none;animation:plus 1.4s ease-out forwards}
+@keyframes plus{to{transform:translateY(-80px);opacity:0}}
+#toast{position:fixed;top:14px;left:50%;transform:translate(-50%,-140%);background:#fff;padding:12px 22px;border-radius:18px;box-shadow:0 6px 18px #0003;z-index:40;transition:transform .45s var(--ease);font-weight:500;max-width:90vw;text-align:center}
+#toast.show{transform:translate(-50%,0)}
+#invite{position:fixed;bottom:calc(76px + env(safe-area-inset-bottom));left:50%;transform:translate(-50%,200%);background:linear-gradient(135deg,var(--pink),var(--purple));color:#fff;padding:12px 16px;border-radius:20px;box-shadow:0 8px 24px #0004;z-index:41;transition:transform .5s var(--ease);display:flex;gap:10px;align-items:center;font-weight:500;max-width:92vw}
+#invite.show{transform:translate(-50%,0)}
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:35}
+.crumbs{font-size:13px;opacity:.7}
+
+/* mobile safety: nothing may run off-screen */
+html,body{max-width:100%;overflow-x:hidden}
+.wrap>*,.panel,.game,.qcard,.bubble,.qedit,.hist,.paper,.todcard{min-width:0;max-width:100%}
+.panel,.game,.bubble,.qedit,.hist,.qcard,.todcard,.paper,.opt,.wyr button,.speech,h1,h2,h3,h4,p,label{overflow-wrap:anywhere}
+img,canvas,svg,video{max-width:100%}
+.row>input,.row>textarea,.row>select{min-width:0;flex:1 1 0}
+.row>.btn,.row>label.btn{flex:0 0 auto}
+input[type=datetime-local],input[type=date]{min-width:0;max-width:100%}
+header{row-gap:8px}
+.grid{grid-template-columns:repeat(auto-fill,minmax(min(200px,100%),1fr))}
+@media(max-width:480px){
+  .wrap{padding:12px 10px 110px}
+  .panel{padding:16px;border-radius:22px}
+  .btn{font-size:15px;padding:11px 16px}
+  .logo{font-size:26px}
+  .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .game{padding:14px 10px}.game .emoji{font-size:40px}.game h3{font-size:16px}.game p{font-size:12px}
+  .feature{flex-direction:column;text-align:center;gap:6px;padding:18px}.feature .emoji{font-size:48px}.feature h3{font-size:19px}.feature p{font-size:14px}
+  .tag{font-size:10px;padding:1px 7px}
+  .cd{min-width:0;padding:8px 10px;flex:1 1 60px}.cd b{font-size:24px}
+  .countdown{gap:6px;flex-wrap:nowrap}
+  .twocol{gap:12px}
+  #reactions{padding:4px 6px}#reactions button{width:38px;height:38px;font-size:22px}
+  .chips{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .kb button{width:34px;height:40px;font-size:16px}
+  .hg-word span{width:28px;height:38px;font-size:24px}
+  .rps button{width:80px;height:80px;font-size:40px}
+  .arena{font-size:64px;gap:20px}
+  .mem{gap:6px}.c4{gap:4px;padding:8px}
+  .todcard,.qcard{padding:22px 16px}
+  .status{font-size:18px}
+  .pill{font-size:14px;padding:5px 10px}
+}
+@media(max-width:340px){.grid{grid-template-columns:minmax(0,1fr)}.logo small{display:none}}
+
+/* themes */
+:root[data-theme=sunset]{--bg1:#ffe3cf;--bg2:#ffc4d6;--pink:#ff7a59;--pink2:#ffb08f;--purple:#d65db1}
+:root[data-theme=night]{--bg1:#241a4d;--bg2:#3b2a7a;--ink:#4a2c5a;--pink:#ff8fc0;--pink2:#ffb3d6;--purple:#b9a2ff}
+:root[data-theme=night] .logo{text-shadow:0 0 18px #ff8fc0aa}
+:root[data-theme=night] .sec{text-shadow:0 0 12px #ff8fc088}
+:root[data-theme=night] #bg span{opacity:.75}
+:root[data-theme=night] .crumbs,:root[data-theme=night] .hello .note{color:inherit}
+
+/* sparkles */
+.spark{position:fixed;pointer-events:none;z-index:50;font-size:16px;animation:spark .8s ease-out forwards}
+@keyframes spark{to{transform:translate(var(--dx),var(--dy)) scale(.2) rotate(120deg);opacity:0}}
+
+/* Mochi pet */
+.petbox{text-align:center}
+#pet{font-size:min(44vw,170px);background:none;display:block;margin:6px auto;cursor:pointer;animation:petIdle 2.4s ease-in-out infinite;user-select:none;filter:drop-shadow(0 10px 0 #0000001a)}
+#pet.boing{animation:boing .6s}
+@keyframes petIdle{50%{transform:translateY(-10px) scale(1.03,.97)}}
+@keyframes boing{30%{transform:scale(1.25,.8)}60%{transform:scale(.9,1.15) translateY(-30px)}}
+.stat{display:flex;align-items:center;gap:10px;margin:8px auto;max-width:360px;text-align:left}
+.stat .bar{flex:1;height:16px;border-radius:99px;background:#fff;overflow:hidden}
+.stat .bar i{display:block;height:100%;border-radius:99px;transition:width .6s var(--ease)}
+.speech{display:inline-block;background:#fff;border-radius:18px;padding:8px 16px;box-shadow:var(--shadow);font-weight:500;margin-bottom:6px;animation:pop .3s}
+
+/* Truth or Dare / fortune */
+.todcard{background:linear-gradient(135deg,#fff,#fff0f7);border-radius:26px;padding:30px 22px;min-height:170px;text-align:center;box-shadow:var(--shadow);margin:14px auto;max-width:520px;display:flex;flex-direction:column;justify-content:center;gap:8px;animation:flipIn .6s var(--ease)}
+.todcard .k{font-size:14px;font-weight:700;letter-spacing:2px;color:var(--purple)}
+.todcard h2{font-size:clamp(20px,4.5vw,27px);line-height:1.25}
+.cookie{font-size:110px;display:block;margin:10px auto;background:none;animation:bounce 2.4s infinite;cursor:pointer}
+.cookie.crack{animation:boing .6s}
+
+/* Heart catcher */
+#hcarea{position:relative;height:min(62vh,420px);border-radius:24px;background:linear-gradient(#fff,#ffe9f5);box-shadow:var(--shadow);overflow:hidden;touch-action:manipulation;user-select:none}
+.fall{position:absolute;top:0;left:0;font-size:38px;cursor:pointer;will-change:transform;line-height:1}
+.fall.gone{animation:gone .3s forwards}
+@keyframes gone{to{transform:scale(1.8);opacity:0}}
+.hud{display:flex;justify-content:space-between;font-weight:700;font-size:20px;margin:6px 4px}
+</style>
+</head>
+<body>
+<div id="bg"></div>
+<canvas id="confetti"></canvas>
+<div id="toast"></div>
+<div id="invite"><span id="invTxt"></span><button class="btn mint small" id="invGo">Join 💞</button><button class="iconbtn" id="invX" style="width:30px;height:30px;font-size:14px">✕</button></div>
+
+<div class="wrap">
+  <header>
+    <div class="logo">Our Little Arcade 💕<small>just for the two of us</small></div>
+    <div class="row">
+      <span class="pill"><span class="dot" id="dot"></span><span id="statusTxt">Not connected</span></span>
+      <button class="iconbtn" id="themeBtn" title="Change theme">🎨</button>
+      <button class="iconbtn" id="muteBtn" title="Sound">🔊</button>
+    </div>
+  </header>
+
+  <!-- CONNECT -->
+  <section id="connect" class="panel center view-in">
+    <div class="big-heart">💖</div>
+    <h2>Hey you! 👋</h2>
+    <p>What should I call you?</p>
+    <div style="max-width:340px;margin:0 auto 10px"><input id="nameIn" placeholder="Your name" maxlength="20"></div>
+    <p class="note" style="margin-bottom:4px">What do you call your love? (optional pet name 🥺)</p>
+    <div style="max-width:340px;margin:0 auto 14px"><input id="nickIn" placeholder="e.g. babe, cutie, my person…" maxlength="20"></div>
+    <p class="note">One of you creates a room, the other joins with the code. Then you're playing live, together. 💞</p>
+    <div class="row" style="justify-content:center;margin-top:12px">
+      <button class="btn" id="createBtn">✨ Create a room</button>
+      <button class="btn alt" id="joinBtn">💌 Join a room</button>
+    </div>
+    <div id="hostBox" class="hidden view-in" style="margin-top:18px">
+      <p>Send this code to your love:</p>
+      <div class="code" id="roomCode">----</div>
+      <p class="note">Waiting for them to join… keep this page open 🌸</p>
+    </div>
+    <div id="joinBox" class="hidden view-in" style="margin-top:18px">
+      <div class="row" style="max-width:340px;margin:0 auto;flex-wrap:nowrap">
+        <input id="codeIn" placeholder="ROOM CODE" maxlength="4" style="text-transform:uppercase;text-align:center;letter-spacing:4px">
+        <button class="btn mint" id="goBtn">Go!</button>
+      </div>
+    </div>
+    <p style="margin-top:22px"><button class="btn ghost small" id="soloBtn">Just peek around (solo mode) →</button></p>
+  </section>
+
+  <!-- HUB -->
+  <section id="hub" class="hidden">
+    <div class="panel hello view-in">
+      <div>
+        <h2 id="greet">Hi 💕</h2>
+        <div class="daynote" id="daynote"></div>
+      </div>
+      <div class="meter">
+        <div class="row" style="justify-content:space-between"><b id="lvl">Crush 🌱</b><span class="note" id="lvlPts">0 💗</span></div>
+        <div class="bar"><i id="lvlBar" style="width:0%"></i></div>
+        <div class="note" id="lvlNext"></div>
+      </div>
+    </div>
+
+    <div id="joinBar"></div>
+    <div class="tabs" id="tabs">
+      <button data-t="today">🌅 Today</button><button data-t="talk">💬 Talk</button><button data-t="play">🎮 Play</button><button data-t="together">💞 Together</button>
+    </div>
+
+    <div class="tabpane" data-t="today"><div id="todayBox"></div>
+    <div class="twocol">
+      <div class="panel center" style="margin:0">
+        <h3>💖 Until we're together again</h3>
+        <div class="countdown" id="cd"></div>
+        <div class="row" style="justify-content:center;margin-top:12px;flex-wrap:nowrap">
+          <input type="datetime-local" id="meetIn" style="max-width:230px">
+          <button class="btn small" id="meetBtn">Set</button>
+        </div>
+      </div>
+      <div class="panel center" style="margin:0">
+        <h3>💞 Days of us</h3>
+        <div class="countdown" id="since"></div>
+        <div class="row" style="justify-content:center;margin-top:12px;flex-wrap:nowrap">
+          <input type="date" id="sinceIn" style="max-width:230px">
+          <button class="btn small alt" id="sinceBtn">Set</button>
+        </div>
+      </div>
+    </div>
+
+    </div>
+    <div class="tabpane hidden" data-t="talk">
+    <div class="grid stagger" id="g1">
+      <div class="game feature" data-g="qa" style="grid-column:1/-1"><span class="tag">✨ Start here</span><span class="emoji">💌</span><div><h3>Deep Talk — Same Question, Two Hearts</h3><p>Answer the same question. Once you BOTH answer, you see each other's answers. 72 questions from silly to soul-deep.</p></div></div>
+      <div class="game" data-g="gwp"><span class="tag">2P live</span><span class="emoji">🎯</span><h3>Guess My Pick</h3><p>Live: pick secretly, they guess</p></div>
+      <div class="game" data-g="quiz"><span class="tag">Quiz</span><span class="emoji">🧠💗</span><h3>Write-Your-Own Quiz</h3><p>Write yours, take theirs</p></div>
+      <div class="game" data-g="wyr"><span class="tag">2P live</span><span class="emoji">🤔</span><h3>Would You Rather</h3><p>Pick together, reveal together</p></div>
+      <div class="game" data-g="jar"><span class="emoji">🫙</span><h3>Reasons I Love You</h3><p>Fill their jar, draw yours</p></div>
+      <div class="game" data-g="scratch"><span class="emoji">🎟️</span><h3>Scratch Card</h3><p>Send a secret message</p></div>
+      <div class="game" data-g="tod"><span class="tag">2P live</span><span class="emoji">🎭</span><h3>Truth or Dare</h3><p>Cute, spicy & long-distance safe</p></div>
+      <div class="game" data-g="fortune"><span class="emoji">🥠</span><h3>Love Fortune Cookie</h3><p>Crack it, send it to them</p></div>
+      <div class="game" data-g="nhie"><span class="tag">2P live</span><span class="emoji">🙋</span><h3>Never Have I Ever</h3><p>Answer secretly, reveal together</p></div>
+      <div class="game" data-g="ttl"><span class="tag">2P live</span><span class="emoji">🤥</span><h3>Two Truths & a Lie</h3><p>Can you spot the fib?</p></div>
+    </div>
+
+    </div>
+    <div class="tabpane hidden" data-t="play">
+    <div class="grid stagger" id="g2">
+      <div class="game feature" data-g="garden" style="grid-column:1/-1;background:linear-gradient(135deg,#5fd3b3,#6ec3ff)"><span class="tag">🌻 Co-op</span><span class="emoji">🌻🧟</span><div><h3>Love Garden — Plants vs Zombies</h3><p>12 levels + endless mode, 12 plants to unlock, one shared lawn. Your progress is saved — you both continue from the same level!</p></div></div>
+      <div class="game" data-g="ttt"><span class="tag">2P live</span><span class="emoji">💗⭐</span><h3>Tic-Tac-Toe</h3><p>Classic, but cuter</p></div>
+      <div class="game" data-g="c4"><span class="tag">2P live</span><span class="emoji">🔴🟡</span><h3>Connect 4</h3><p>Drop 'em & line 'em up</p></div>
+      <div class="game" data-g="mem"><span class="tag">2P live</span><span class="emoji">🃏</span><h3>Memory Match</h3><p>Use photos of us!</p></div>
+      <div class="game" data-g="bs"><span class="tag">2P live</span><span class="emoji">🚢</span><h3>Battleship</h3><p>Sink your love's fleet</p></div>
+      <div class="game" data-g="rps"><span class="tag">2P live</span><span class="emoji">✊✋✌️</span><h3>Rock Paper Scissors</h3><p>Best of forever</p></div>
+      <div class="game" data-g="hang"><span class="tag">2P live</span><span class="emoji">🔤</span><h3>Guess the Word</h3><p>Hangman with hearts</p></div>
+      <div class="game" data-g="hc"><span class="tag">2P live</span><span class="emoji">🏹💗</span><h3>Heart Catcher</h3><p>20 seconds. Who catches more?</p></div>
+      <div class="game" data-g="flappy"><span class="tag">Race</span><span class="emoji">🕊️</span><h3>Flappy Cupid</h3><p>Same course, beat their score</p></div>
+      <div class="game" data-g="g2048"><span class="tag">Race</span><span class="emoji">🔢</span><h3>2048 Love</h3><p>90 seconds, same tiles</p></div>
+      <div class="game" data-g="snake"><span class="tag">Race</span><span class="emoji">🐍</span><h3>Love Snake</h3><p>Same apples, higher score wins</p></div>
+      <div class="game" data-g="qd"><span class="tag">2P live</span><span class="emoji">⚡</span><h3>Quick Draw</h3><p>Who taps fastest?</p></div>
+      <div class="game" data-g="reversi"><span class="tag">2P live</span><span class="emoji">⚫⚪</span><h3>Reversi</h3><p>Flip the board to your colour</p></div>
+      <div class="game" data-g="trivia"><span class="tag">2P live</span><span class="emoji">🧠</span><h3>Couple Trivia</h3><p>10 questions, speed bonus</p></div>
+      <div class="game" data-g="dg"><span class="tag">2P live</span><span class="emoji">✏️❓</span><h3>Draw & Guess</h3><p>Pictionary for two</p></div>
+    </div>
+
+    </div>
+    <div class="tabpane hidden" data-t="together">
+    <div class="grid stagger" id="g3">
+      <div class="game" data-g="lists"><span class="emoji">📝</span><h3>Our Lists</h3><p>Movies, songs, places, dinners & bucket list</p></div>
+      <div class="game" data-g="wall"><span class="emoji">🖼️</span><h3>Memory Wall</h3><p>Polaroids of us, with captions</p></div>
+      <div class="game" data-g="letters"><span class="emoji">💌</span><h3>Love Letters</h3><p>"Open when…" & time capsules</p></div>
+      <div class="game" data-g="timer"><span class="tag">2P live</span><span class="emoji">⏳</span><h3>Together Timer</h3><p>Study, work or sleep-call side by side</p></div>
+      <div class="game" data-g="trophy"><span class="emoji">🏆</span><h3>Trophy Room</h3><p>Badges you unlock as a couple</p></div>
+      <div class="game feature" data-g="pet" style="grid-column:1/-1"><span class="tag">🐾 New</span><span class="emoji">🐱</span><div><h3>Mochi — Our Shared Pet</h3><p>Feed, play with and cuddle Mochi together. If you both forget, Mochi gets sad. 🥺</p></div></div>
+      <div class="game" data-g="draw"><span class="tag">2P live</span><span class="emoji">🎨</span><h3>Draw Together</h3><p>One canvas, two artists</p></div>
+      <div class="game" data-g="beat"><span class="tag">2P live</span><span class="emoji">💓</span><h3>Heartbeat Sync</h3><p>Tap together to sync hearts</p></div>
+      <div class="game" data-g="spin"><span class="emoji">🎡</span><h3>Date Night Spinner</h3><p>Spin, synced on both screens</p></div>
+    </div>
+    </div>
+  </section>
+
+  <!-- GAME STAGE -->
+  <section id="stage" class="panel hidden">
+    <div class="topbar"><button class="btn ghost small" id="backBtn">← Back</button><h2 id="gameTitle"></h2><span class="crumbs" id="crumb"></span></div>
+    <div id="gameBody"></div>
+  </section>
+</div>
+
+<div id="reactions" class="hidden">
+  <button data-e="💋">💋</button><button data-e="🤗">🤗</button><button data-e="💕">💕</button><button data-e="😘">😘</button><button data-e="🥰">🥰</button><button data-e="😂">😂</button><button data-e="🎉">🎉</button>
+</div>
+
+<script>
+/* ============ helpers ============ */
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch{return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}};
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const show=el=>{el.classList.remove('hidden');el.classList.remove('view-in');void el.offsetWidth;el.classList.add('view-in')};
+const hide=el=>el.classList.add('hidden');
+
+(()=>{const bg=$('#bg'),em=['💗','💖','💕','✨','🌸','💜','🫧','⭐'];
+for(let i=0;i<20;i++){const s=document.createElement('span');s.textContent=em[i%em.length];
+s.style.left=Math.random()*100+'%';s.style.fontSize=(14+Math.random()*26)+'px';
+s.style.animationDuration=(14+Math.random()*16)+'s';s.style.animationDelay=(-Math.random()*20)+'s';bg.appendChild(s)}})();
+
+/* sound */
+let muted=LS.get('lg_mute',false);
+const AC=window.AudioContext||window.webkitAudioContext;let ac;
+function beep(freq=600,dur=.12,type='sine',vol=.15,when=0){
+  if(muted)return;try{ac=ac||new AC();if(ac.state==='suspended')ac.resume();const o=ac.createOscillator(),g=ac.createGain();
+  o.type=type;o.frequency.value=freq;g.gain.value=vol;g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+when+dur);
+  o.connect(g);g.connect(ac.destination);o.start(ac.currentTime+when);o.stop(ac.currentTime+when+dur)}catch{}}
+const sfx={pop:()=>beep(700,.1,'triangle'),tap:()=>beep(440,.08,'sine'),
+  win:()=>[523,659,784,1046].forEach((f,i)=>beep(f,.2,'triangle',.18,i*.12)),
+  bad:()=>beep(200,.25,'sawtooth',.1),match:()=>{beep(660,.1,'triangle');beep(880,.15,'triangle',.15,.1)},
+  love:()=>{beep(880,.12,'sine',.15);beep(1175,.2,'sine',.15,.12)},
+  boom:()=>{beep(120,.3,'sawtooth',.15);beep(80,.4,'square',.1,.05)},splash:()=>beep(500,.15,'sine',.1),
+  reveal:()=>[392,523,659].forEach((f,i)=>beep(f,.25,'sine',.14,i*.09))};
+$('#muteBtn').textContent=muted?'🔇':'🔊';
+$('#muteBtn').onclick=()=>{muted=!muted;LS.set('lg_mute',muted);$('#muteBtn').textContent=muted?'🔇':'🔊'};
+
+let toastT;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),3200)}
+function vibe(p=60){try{navigator.vibrate&&navigator.vibrate(p)}catch{}}
+
+/* confetti */
+const cv=$('#confetti'),cx=cv.getContext('2d');let parts=[],raf;
+function sizeCv(){cv.width=innerWidth;cv.height=innerHeight}sizeCv();addEventListener('resize',sizeCv);
+function confetti(n=90){const em=['💖','✨','🎉','💜','🌸','⭐','💕'];
+  for(let i=0;i<n;i++)parts.push({x:innerWidth/2+(Math.random()-.5)*200,y:innerHeight*.6,vx:(Math.random()-.5)*14,vy:-8-Math.random()*12,r:Math.random()*6,vr:(Math.random()-.5)*.3,e:em[i%em.length],s:16+Math.random()*20});
+  if(!raf)raf=requestAnimationFrame(tick)}
+function tick(){cx.clearRect(0,0,cv.width,cv.height);parts.forEach(p=>{p.vy+=.35;p.x+=p.vx;p.y+=p.vy;p.r+=p.vr;
+  cx.save();cx.translate(p.x,p.y);cx.rotate(p.r);cx.font=p.s+'px serif';cx.fillText(p.e,0,0);cx.restore()});
+  parts=parts.filter(p=>p.y<innerHeight+50);raf=parts.length?requestAnimationFrame(tick):null;if(!raf)cx.clearRect(0,0,cv.width,cv.height)}
+function floatEmoji(e){for(let i=0;i<7;i++){const s=document.createElement('div');s.className='float';s.textContent=e;
+  s.style.left=(15+Math.random()*70)+'%';s.style.bottom=(60+Math.random()*30)+'px';s.style.animationDelay=(i*.12)+'s';
+  document.body.appendChild(s);setTimeout(()=>s.remove(),2800)}}
+function ringAt(x,y){const r=document.createElement('div');r.className='ring';r.style.left=x+'px';r.style.top=y+'px';document.body.appendChild(r);setTimeout(()=>r.remove(),1000)}
+
+/* love points */
+const LEVELS=[[0,'Crush 🌱'],[50,'Sweethearts 🍓'],[150,'Lovebirds 🐦'],[300,'Soulmates ✨'],[600,'Forever & Always 💍'],[1000,'Legendary Love 👑']];
+function loves(){return LS.get('lg_love',0)}
+function addLove(n){LS.set('lg_love',loves()+n);const p=document.createElement('div');p.className='plus';p.textContent='+'+n+' 💗';
+  p.style.left=(innerWidth/2-30)+'px';p.style.top=(innerHeight/2)+'px';document.body.appendChild(p);setTimeout(()=>p.remove(),1500);renderLove()}
+function renderLove(){const v=loves();let i=0;LEVELS.forEach((l,k)=>{if(v>=l[0])i=k});const cur=LEVELS[i],nx=LEVELS[i+1];
+  $('#lvl').textContent=cur[1];$('#lvlPts').textContent=v+' 💗';
+  $('#lvlBar').style.width=(nx?Math.min(100,(v-cur[0])/(nx[0]-cur[0])*100):100)+'%';
+  $('#lvlNext').textContent=nx?`${nx[0]-v} more 💗 to reach ${nx[1]}`:'Max level reached — you two are legendary!'}
+
+/* ============ networking (PeerJS / WebRTC) ============ */
+const me={name:LS.get('lg_name',''),nick:LS.get('lg_nick','')};
+const Net={peer:null,conn:null,role:'host',connected:false,handlers:{},partner:'Sweetheart',realName:'',code:null,tries:0,
+  on(t,f){this.handlers[t]=f},
+  send(t,d){if(this.conn&&this.connected)try{this.conn.send({t,d})}catch{}},
+  setup(c){
+    if(this.conn&&this.conn!==c){try{this.conn.close()}catch{}}
+    this.conn=c;
+    c.on('open',()=>{this.connected=true;this.tries=0;setStatus();this.send('hello',{name:me.name});onConnected()});
+    c.on('data',m=>{if(m&&m.t&&this.handlers[m.t])try{this.handlers[m.t](m.d)}catch(e){console.error(e)}});
+    c.on('close',()=>{if(this.conn!==c)return;this.connected=false;partnerAt=null;setStatus();renderJoinBar();toast('💔 Connection dropped — reconnecting…');
+      if(this.role==='guest'&&this.code&&this.tries<12){this.tries++;setTimeout(()=>{if(!this.connected)this.reconnect()},2000)}});
+    c.on('error',()=>{});
+  },
+  /* Signaling servers, in order of preference: YOUR relay (if configured in config.js), then the free public PeerJS cloud.
+     The host registers the room on ALL of them; the guest tries them one after another — so a sleeping/offline relay never blocks you. */
+  servers(){const s=[];if(CFG.relay){const[h,p]=String(CFG.relay).split(':');s.push({name:'relay',host:h,port:+p||(CFG.relaySecure?443:80),path:'/peerjs',secure:CFG.relaySecure,key:CFG.peerKey})}s.push({name:'public'});return s},
+  peerOpts(spec){const o={config:{iceServers:this.ice,sdpSemantics:'unified-plan'}};if(spec.host)Object.assign(o,{host:spec.host,port:spec.port,path:spec.path,secure:spec.secure,key:spec.key});return o},
+  host(){const code=Array.from({length:4},()=>'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*31)]).join('');
+    this.role='host';this.code=code;$('#roomCode').textContent=code;
+    this.hostPeers.forEach(p=>{try{p.destroy()}catch{}});this.hostPeers=[];
+    Promise.race([this.iceReady,new Promise(r=>setTimeout(r,4000))]).then(()=>{if(this.code!==code||this.role!=='host')return;
+      this.servers().forEach(spec=>{const p=new Peer('ola-'+code,this.peerOpts(spec));p._spec=spec.name;this.hostPeers.push(p);
+        p.on('connection',c=>{this.peer=p;this.setup(c)});
+        p.on('disconnected',()=>{try{p.reconnect()}catch{}});
+        p.on('error',e=>{if(e.type==='unavailable-id'){if(this.code===code)this.host()}
+          else if(spec.name==='public'&&!['disconnected','network','server-error','socket-error','socket-closed'].includes(e.type))toast('Network hiccup: '+e.type)})});
+      this.peer=this.hostPeers[0]})},
+  join(code){this.role='guest';this.code=code.toUpperCase();try{this.peer&&this.peer.destroy()}catch{}
+    const me2=this.code;let i=0,lastErr='';const specs=this.servers();
+    Promise.race([this.iceReady,new Promise(r=>setTimeout(r,4000))]).then(()=>{
+      const attempt=()=>{if(this.code!==me2||this.connected)return;
+        if(i>=specs.length){   // every server tried
+          if(lastErr==='peer-unavailable'){if(this.tries===0)toast('Room not found — check the code 🔍');else setTimeout(()=>{if(!this.connected&&this.tries<12){this.tries++;this.reconnect()}},2500)}
+          else if(lastErr==='timeout')toast('Found the room, but your networks are blocking the direct link 🌐 Try mobile data on one side (or set up the relay — see README).');
+          else toast('Couldn\'t reach the connection server — check your internet 🌐');return}
+        const spec=specs[i++];let moved=false;const p=new Peer(undefined,this.peerOpts(spec));this.peer=p;
+        const next=e=>{if(moved||this.connected)return;moved=true;lastErr=e||lastErr;clearTimeout(t);try{p.destroy()}catch{}attempt()};
+        const t=setTimeout(()=>next('timeout'),spec.name==='relay'?12000:15000);
+        p.on('open',()=>{const c=p.connect('ola-'+me2,{reliable:true});this.setup(c);c.on('open',()=>clearTimeout(t))});
+        p.on('error',e=>{if(e.type==='disconnected')return;next(e.type)})};
+      attempt()})},
+  reconnect(){this.join(this.code)}};
+/* ---- connection settings (see config.js) ---- */
+const CFG=Object.assign({relay:'',relaySecure:true,peerKey:'lovearcade'},window.ARCADE_CONFIG||{});
+Net.hostPeers=[];
+Net.ice=[{urls:['stun:stun.l.google.com:19302','stun:stun.cloudflare.com:3478']}];
+Net.hasTurn=false;
+/* Fetch TURN credentials from YOUR relay (this also wakes a sleeping free instance). Never blocks the app. */
+Net.iceReady=(async()=>{if(!CFG.relay)return;try{const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),10000);
+  const r=await fetch((CFG.relaySecure?'https://':'http://')+CFG.relay+'/turn',{signal:ctl.signal});clearTimeout(tm);const j=await r.json();
+  if(j&&Array.isArray(j.iceServers)&&j.iceServers.length){Net.ice=j.iceServers;Net.hasTurn=!!j.turn}}catch{}})();
+function pn(){return me.nick||Net.realName||'your love'}
+function setStatus(){$('#dot').classList.toggle('on',Net.connected);
+  $('#statusTxt').textContent=Net.connected?('Playing with '+Net.partner):'Not connected'}
+
+Net.on('hello',d=>{Net.realName=d.name||'';Net.partner=me.nick||Net.realName||'Sweetheart';setStatus();toast('💞 '+Net.partner+' is here!');sfx.love();confetti(50);vibe([60,40,60]);renderHub()});
+Net.on('react',e=>{floatEmoji(e);sfx.love();vibe(40)});
+function onConnected(){
+  if(!$('#connect').classList.contains('hidden'))showHub();
+  Net.send('photos',LS.get('lg_photos',[]));Net.send('quiz',LS.get('lg_quiz',[]));Net.send('jar',LS.get('lg_jar_mine',[]));
+  /* meet date / days-together are merged by timestamp in sync.js (newest edit wins) */
+  if(current)Net.send('nav',{g:current})
+}
+
+/* ============ navigation ============ */
+let current=null;
+function needName(){const n=$('#nameIn').value.trim();if(!n){toast('Tell me your name first 🌷');$('#nameIn').focus();return false}
+  me.name=n;me.nick=$('#nickIn').value.trim();LS.set('lg_name',n);LS.set('lg_nick',me.nick);Net.partner=me.nick||Net.partner;return true}
+$('#nameIn').value=me.name;$('#nickIn').value=me.nick;
+$('#createBtn').onclick=()=>{if(!needName())return;hide($('#joinBox'));show($('#hostBox'));if(!Net.peer)Net.host()};
+$('#joinBtn').onclick=()=>{if(!needName())return;hide($('#hostBox'));show($('#joinBox'));$('#codeIn').focus()};
+$('#goBtn').onclick=()=>{const c=$('#codeIn').value.trim();if(c.length<4){toast('Code has 4 characters');return}Net.tries=0;toast('Connecting… 💫');Net.join(c)};
+$('#codeIn').onkeydown=e=>{if(e.key==='Enter')$('#goBtn').click()};
+$('#soloBtn').onclick=()=>{if(!needName())return;showHub()};
+function showTab(t){if(!$(`.tabpane[data-t="${t}"]`))t='today';LS.set('lg_tab',t);
+  $$('.tabpane').forEach(p=>p.classList.toggle('hidden',p.dataset.t!==t));$$('#tabs button').forEach(b=>b.classList.toggle('sel',b.dataset.t===t));
+  const p=$(`.tabpane[data-t="${t}"]`);p.classList.remove('view-in');void p.offsetWidth;p.classList.add('view-in');
+  typeof hubTab==='function'&&hubTab(t)}
+$$('#tabs button').forEach(b=>b.onclick=()=>{sfx.tap();showTab(b.dataset.t);window.scrollTo({top:0,behavior:'smooth'})});
+function showHub(){hide($('#connect'));hide($('#stage'));renderHub();renderJoinBar();showTab(LS.get('lg_tab','today'));show($('#hub'));show($('#reactions'));$('#reactions').classList.remove('view-in');current=null;window.scrollTo({top:0})}
+const NOTES=["You're my favourite notification. 💌","Every hello with you is my favourite part of the day.","Miles apart, still the same sky, still the same us. 🌙","Missing you is just loving you out loud.","You make ordinary days feel like holidays.","Home isn't a place — it's you.","I'd choose you in every timeline. ✨","Thinking of you is my default setting.","Our love has no distance limit.","You + me = my favourite equation.","You're the reason I check my phone with a smile.","One day we'll laugh about all this distance, together.","You're worth every mile and every minute.","My heart lives in two places, and one is with you. 💗","I'm so proud to be yours.","You're my today and all of my tomorrows.","Somebody is thinking about you right now. It's me. 🥰","Love looks good on us.","Long distance? More like long-lasting. 💞","Your laugh is my favourite sound in the world.","You are my calm and my chaos.","Every day closer to the next hug.","You're the best thing that ever happened to my life.","I love you more than yesterday, less than tomorrow.","Together is my favourite place to be — even on a screen.","You had me at 'hey'. 💘","Be brave, be kind, and know you're deeply loved.","I'm the luckiest, and I know it. 🍀","You're my person. Always.","Sending you a hug through the wifi. 🤗"];
+function renderHub(){
+  const n=me.name||'you',day=Math.floor(Date.now()/864e5);
+  $('#greet').innerHTML=`Hi ${esc(n)} 💕 ${Net.connected?`<small class="note">with ${esc(Net.partner)}</small>`:''}`;
+  $('#daynote').textContent=NOTES[day%NOTES.length];renderLove();renderCd();renderSince()}
+function openGame(g,fromInvite){if(!Games[g]){toast('This one is still loading… try again in a moment 🚧');return}current=g;hide($('#hub'));hide($('#invite'));show($('#stage'));window.scrollTo({top:0});
+  const G=Games[g];$('#gameTitle').textContent=G.title;$('#crumb').textContent='';$('#gameBody').innerHTML='';G.start($('#gameBody'));$('#invite').classList.remove('show');
+  Net.send('nav',{g})}
+function bindGames(){$$('.game').forEach(el=>el.onclick=()=>{sfx.pop();openGame(el.dataset.g)})}bindGames();
+$('#backBtn').onclick=()=>{Games[current]?.stop?.();showHub();Net.send('nav',{g:null})};
+/* who is where: lets each of you jump into the game the other one is playing */
+let partnerAt=null;
+function renderJoinBar(){const b=$('#joinBar');if(!b)return;const g=partnerAt;
+  if(Net.connected&&g&&Games[g]&&current!==g){b.innerHTML=`<div class="joinbar"><span>💞 <b>${esc(Net.partner)}</b> is playing <b>${esc(Games[g].title)}</b></span><button class="btn mint small" id="jb-go">Join now ▶</button></div>`;
+    $('#jb-go').onclick=()=>{if(current)Games[current]?.stop?.();openGame(g)}}
+  else b.innerHTML=''}
+/* returns true when the other player is already in this game; otherwise invites them */
+function partnerHere(g){if(!Net.connected)return true;if(partnerAt===g)return true;Net.send('nav',{g});toast(`💌 ${Net.partner} isn't in this game yet — I've sent them an invite. Start once they join!`);return false}
+$$('#reactions button').forEach(b=>b.onclick=()=>{floatEmoji(b.dataset.e);sfx.love();Net.send('react',b.dataset.e)});
+
+/* invites & mid-game sync */
+let invG=null;
+Net.on('nav',d=>{partnerAt=d.g||null;renderJoinBar();if(!d.g||!Games[d.g])return;
+  if(current===d.g){const s=Games[d.g].snap?.();if(s)Net.send('snap',{g:d.g,s})}
+  else if(current!==d.g){invG=d.g;$('#invTxt').textContent=`💌 ${Net.partner} is playing ${Games[d.g].title}`;$('#invite').classList.add('show');sfx.love();
+    clearTimeout(Net._it);Net._it=setTimeout(()=>$('#invite').classList.remove('show'),12000)}});
+Net.on('snap',d=>{if(current===d.g)Games[d.g].restore?.(d.s)});
+$('#invGo').onclick=()=>{$('#invite').classList.remove('show');if(invG){if(current)Games[current]?.stop?.();openGame(invG)}};
+$('#invX').onclick=()=>$('#invite').classList.remove('show');
+
+/* ============ countdown & together since ============ */
+function setMeet(v,b){LS.set('lg_meet',v);if(b)Net.send('meet',v);renderCd()}
+$('#meetBtn').onclick=()=>{const v=$('#meetIn').value;if(!v){toast('Pick a date first 📅');return}setMeet(v,true);toast('Countdown set! 🥹');confetti(40)};
+Net.on('meet',v=>{setMeet(v,false);toast('📅 Countdown updated by '+Net.partner)});
+function renderCd(){const v=LS.get('lg_meet',null),box=$('#cd');
+  if(!v){box.innerHTML='<p class="note">Set the date you\'ll meet next ✈️</p>';return}
+  const diff=new Date(v)-new Date();
+  if(diff<=0){box.innerHTML='<h2>🎉 Today is the day!! 🎉</h2>';return}
+  const d=Math.floor(diff/864e5),h=Math.floor(diff/36e5)%24,m=Math.floor(diff/6e4)%60,s=Math.floor(diff/1e3)%60;
+  box.innerHTML=[[d,'days'],[h,'hours'],[m,'mins'],[s,'secs']].map(([n,l])=>`<div class="cd"><b>${n}</b><span>${l}</span></div>`).join('')}
+setInterval(renderCd,1000);
+if(LS.get('lg_meet',null))$('#meetIn').value=LS.get('lg_meet');
+function renderSince(){const v=LS.get('lg_since',null),box=$('#since');
+  if(!v){box.innerHTML='<p class="note">When did your story begin? 🥰</p>';return}
+  const d=Math.max(0,Math.floor((Date.now()-new Date(v+'T00:00'))/864e5));
+  box.innerHTML=`<div class="cd"><b>${d}</b><span>days</span></div><div class="cd"><b>${Math.floor(d/7)}</b><span>weeks</span></div><div class="cd"><b>${(d/30.44).toFixed(1)}</b><span>months</span></div>`}
+$('#sinceBtn').onclick=()=>{const v=$('#sinceIn').value;if(!v){toast('Pick a date 💞');return}LS.set('lg_since',v);Net.send('since',v);renderSince();confetti(40);sfx.love()};
+Net.on('since',v=>{LS.set('lg_since',v);renderSince()});
+if(LS.get('lg_since',null))$('#sinceIn').value=LS.get('lg_since');
+
+/* ============ GAMES ============ */
+const Games={};
+const canAct=side=>!Net.connected||side===Net.role;
+const pName=side=>side===Net.role?'You':(Net.connected?Net.partner:(side==='host'?'Player 1':'Player 2'));
+
+/* ---- Deep Talk (same question, both answer, then reveal) ---- */
+const QB={
+ fun:{name:'Silly & Fun',emoji:'🎈',qs:[
+  "If we could teleport right now, where would our first stop be?","What's the silliest thing you've done this week?","If I were an animal, what would I be — and why?","What's a song that instantly reminds you of me?","Pineapple on pizza: yes or absolutely not? Defend your answer!","What's your go-to comfort food when you're feeling down?","What's the weirdest dream you've had lately?","Which cartoon or movie character are you most like?","What's your most embarrassing little habit that I probably already know about?","If we opened a café together, what would we name it and what's on the menu?","What emoji describes me best right now?","If we were a duo in a movie, what genre would it be?"]},
+ deep:{name:'Deep & Real',emoji:'🌙',qs:[
+  "What moment made you realise you were falling for me?","What's something you've never told me but want to?","What's a fear about the future you'd like me to help you carry?","When do you feel most loved by me?","What's one thing you wish I understood about you better?","What's a lesson from a hard time that shaped who you are?","What does \"home\" feel like to you?","What do you need more of from me on your hard days?","What are you most proud of yourself for lately?","What's something small I do that means the world to you?","What does being loved well look like to you?","What's a dream you've been too shy to say out loud?"]},
+ flirty:{name:'Flirty & Sweet',emoji:'😘',qs:[
+  "What's the first thing you noticed about me?","Describe our first (or dream) kiss in three words.","What's your favourite thing about my voice or laugh?","What would our perfect night together look like, hour by hour?","What's a nickname you secretly love me calling you?","What's one thing I do that instantly makes you blush?","If I showed up at your door tonight, what's the first thing you'd do?","What's the cutest thing about the way I text?","What do you miss most about being near me?","Rate my hugs from 1–10 and tell me why 😏","Which outfit of mine do you love most?","What's something you'd love to whisper to me right now?"]},
+ future:{name:'Our Future',emoji:'🔮',qs:[
+  "Where do you see us living together someday?","Describe our dream home in three details.","What's a trip we absolutely must take together?","What's one tradition you'd love us to start?","Where do you see us in five years?","What do you want our mornings to look like?","What's a goal you have that I can cheer you on for?","What would our dream anniversary celebration look like?","Would we have pets? Which ones, and what names?","What's one thing you want us to learn together?","What's the first meal you want to cook for me when we live together?","What would you say to future us?"]},
+ memories:{name:'Our Memories',emoji:'📸',qs:[
+  "What's your favourite memory of us so far?","What was going through your mind before our very first call or date?","What's the funniest thing that's ever happened between us?","What's the sweetest message I've ever sent you?","What did you think of me the very first time we talked?","What's a small moment with me you'll never forget?","What's a song that felt like \"ours\" at the start?","When was the first time you missed me?","What's the hardest goodbye we've had, and how did it feel?","What's one moment from our story you'd relive?","What's a photo of us you love most?","What's a moment you felt so proud to be mine?"]},
+ distance:{name:'Long Distance',emoji:'✈️',qs:[
+  "What's the hardest part about being apart?","What's the best part of being long-distance (yes, there is one)?","What's a small ritual you'd like us to add to our calls?","What's the first thing you'll do when we're finally in the same place?","What do you do when you miss me the most?","What do I do from far away that makes you feel close to me?","Plan our perfect video-call date. What's the theme?","What's a surprise you'd love me to send you?","What smell, sound, or thing reminds you of me?","What part of your day-to-day do you wish I could see?","How can I support you better from here?","What's the first place you want to take me when we meet?"]}};
+const ALLQ={};Object.entries(QB).forEach(([c,o])=>o.qs.forEach((q,i)=>ALLQ[c+'-'+i]={id:c+'-'+i,cat:c,q}));
+/* "Just Us": custom questions both of you can add (synced) */
+QB.us={name:'Just Us',emoji:'💞',qs:[]};
+function usList(){return LS.get('lg_us',[])}
+function usRefresh(){Object.keys(ALLQ).forEach(k=>{if(k.startsWith('us-'))delete ALLQ[k]});const l=usList();QB.us.qs=l.map(x=>x.text);l.forEach(x=>ALLQ['us-'+x.id]={id:'us-'+x.id,cat:'us',q:x.text})}
+function usMerge(arr){const l=usList(),ids=new Set(l.map(x=>x.id));let n=0;
+  (Array.isArray(arr)?arr:[]).forEach(x=>{if(x&&/^[a-z0-9]{3,12}$/.test(x.id)&&x.text&&!ids.has(x.id)){l.push({id:x.id,text:String(x.text).slice(0,300)});n++}});
+  if(n){LS.set('lg_us',l);usRefresh()}return n}
+usRefresh();
+Net.on('us',a=>{if(usMerge(a)&&current==='qa'){toast(`💞 ${Net.partner} added a "Just Us" question`);Games.qa.render()}});
+Net.on('us-del',id=>{LS.set('lg_us',usList().filter(x=>x.id!==id));usRefresh();if(current==='qa')Games.qa.render()});
+let qaSess=null,qaMine={},qaTheirs={},qaSaved={};
+Net.on('qa-start',d=>{usMerge(d.us);qaSess={cat:d.cat,order:d.order,i:0};if(current==='qa')Games.qa.render()});
+Net.on('qa-ans',d=>{qaTheirs[d.id]=d.text;if(current==='qa')Games.qa.render(true)});
+Net.on('qa-next',d=>{if(qaSess&&d.i>qaSess.i){qaSess.i=d.i;if(current==='qa')Games.qa.render()}});
+const qaSkip={};
+Net.on('qa-skip',d=>{const s=qaSkip[d.id]||(qaSkip[d.id]={});const here=current==='qa'&&qaSess&&qaSess.order[qaSess.i]===d.id;
+  if(d.act==='ask'){s.them=true;
+    if(s.me&&here)Games.qa.doSkip(d.id);
+    else if(here){sfx.love();Games.qa.render()}else toast(`⏭ ${Net.partner} would like to skip a question`)}
+  else if(d.act==='no'){s.me=false;toast(`💗 ${Net.partner} wants to answer this one`);if(here)Games.qa.render()}
+  else if(d.act==='cancel'){s.them=false;if(here)Games.qa.render()}});
+Games.qa={title:'Deep Talk 💌',
+  start(el){this.el=el;this.render()},
+  hist(){return LS.get('lg_qa_hist',[])},
+  begin(cat){if(cat==='us'&&!usList().length){toast('Write your first "Just Us" question ✏️');return this.usEditor()}
+    const done=new Set(this.hist().map(h=>h.id));
+    let ids=cat==='mix'?Object.keys(ALLQ):Object.keys(ALLQ).filter(k=>ALLQ[k].cat===cat);
+    ids=shuffle(ids);ids=[...ids.filter(i=>!done.has(i)),...ids.filter(i=>done.has(i))];
+    if(cat==='mix')ids=ids.slice(0,40);
+    qaSess={cat,order:ids,i:0};Net.send('qa-start',{cat,order:ids,us:usList()});sfx.pop();this.render()},
+  usEditor(){const el=this.el,l=usList();$('#crumb').textContent='';
+    const starters=["What's our silliest inside joke, and how did it start?","What's the story behind our nicknames?","What was the best moment of our first video call?","What's something only the two of us understand?","What's our song, and what does it mean to you?","What's the funniest disagreement we've ever had?","What's the most \"us\" thing we do?","Where would you take me on our very first date in person?"];
+    el.innerHTML=`<div class="row" style="justify-content:space-between"><h3>💞 Just Us questions</h3><button class="btn ghost small" id="us-back">← Back</button></div>
+      <p class="note">Write questions only the two of you would get — inside jokes, memories, nicknames. You can <b>both</b> add questions and they sync automatically. ${Net.connected?'':'(They\'ll send when you connect.)'}</p>
+      <div class="row" style="flex-wrap:nowrap"><textarea id="us-t" rows="2" maxlength="200" placeholder="e.g. What's the story behind our first video call?"></textarea><button class="btn" id="us-a">Add</button></div>
+      <div class="row" style="margin:10px 0">${starters.map((s,i)=>`<button class="btn ghost small" data-s="${i}">💡 ${esc(s.slice(0,28))}…</button>`).join('')}</div>
+      <h4>Our questions (${l.length})</h4>
+      ${l.map(x=>`<div class="qedit row" style="justify-content:space-between">${esc(x.text)}<button class="btn ghost small" data-d="${x.id}">✕</button></div>`).join('')||'<p class="note">Nothing yet — add your first one above 🥰</p>'}
+      ${l.length?'<div class="center"><button class="btn" id="us-play">▶ Play Just Us</button></div>':''}`;
+    $('#us-back').onclick=()=>this.render();
+    $$('[data-s]',el).forEach(b=>b.onclick=()=>{$('#us-t').value=starters[+b.dataset.s];$('#us-t').focus()});
+    $('#us-a').onclick=()=>{const t=$('#us-t').value.trim();if(!t){toast('Write a question first 💭');return}
+      const n=usList();n.push({id:Math.random().toString(36).slice(2,8),text:t});LS.set('lg_us',n);usRefresh();Net.send('us',n);sfx.pop();addLove(1);this.usEditor()};
+    $$('[data-d]',el).forEach(b=>b.onclick=()=>{LS.set('lg_us',usList().filter(x=>x.id!==b.dataset.d));usRefresh();Net.send('us-del',b.dataset.d);this.usEditor()});
+    $('#us-play')&&($('#us-play').onclick=()=>this.begin('us'))},
+  snap(){if(!qaSess)return null;const id=qaSess.order[qaSess.i];return{sess:qaSess,ans:qaMine[id]!==undefined?{id,text:qaMine[id]}:null}},
+  restore(s){if(!s)return;if(!qaSess||qaSess.cat!==s.sess.cat||qaSess.order.join()!==s.sess.order.join())qaSess=s.sess;
+    else if(s.sess.i>qaSess.i)qaSess.i=s.sess.i;
+    if(s.ans)qaTheirs[s.ans.id]=s.ans.text;this.render()},
+  render(soft){const el=this.el;if(!el||current!=='qa')return;const S=qaSess;
+    if(!S)return this.menu();
+    if(S.i>=S.order.length)return this.finish();
+    if(!ALLQ[S.order[S.i]]){S.i++;return this.render()}
+    const id=S.order[S.i],Q=ALLQ[id],mine=qaMine[id],theirs=qaTheirs[id],both=mine!==undefined&&(theirs!==undefined||!Net.connected);
+    const cat=QB[Q.cat];
+    const sk=qaSkip[id]||{};
+    const skipUI=both?'':sk.them&&!sk.me?`<div class="waiting" style="margin-top:12px">💌 ${esc(Net.partner)} wants to skip this question. Skip it too?<div class="row" style="justify-content:center;margin-top:8px"><button class="btn small" id="qa-yes">Yes, skip ⏭</button><button class="btn ghost small" id="qa-no">No, let's answer 💗</button></div></div>`
+      :sk.me?`<div class="waiting" style="margin-top:12px">⏳ Waiting for ${esc(Net.partner)} to agree to skip…<div class="center" style="margin-top:6px"><button class="btn ghost small" id="qa-cancel">Cancel</button></div></div>`
+      :`<div class="center" style="margin-top:12px"><button class="btn ghost small" id="qa-skip">${Net.connected?'Ask to skip ⏭':'Skip ⏭'}</button></div>`;
+    $('#crumb').textContent=`${S.i+1} / ${S.order.length}`;
+    let html=`<div class="progress"><i style="width:${S.i/S.order.length*100}%"></i></div>
+      <div class="qcard"><span class="cat">${cat.emoji} ${cat.name}</span><h2>${esc(Q.q)}</h2></div>`;
+    if(mine===undefined){
+      html+=`${theirs!==undefined?`<div class="waiting" style="margin-bottom:10px">✅ ${esc(Net.partner)} already answered! Answer to unlock theirs 👀</div>`:''}
+        <textarea id="qa-t" rows="4" maxlength="500" placeholder="Type your honest answer… 💭"></textarea>
+        <div class="row" style="justify-content:space-between;margin-top:10px"><span class="note">Hidden until you both lock in 🔒</span>
+        <button class="btn" id="qa-lock">Lock it in 🔒</button></div>${skipUI}`;
+    }else if(!both){
+      html+=`<div class="waiting">🔒 Your answer is locked in!<br>⏳ Waiting for ${esc(Net.partner)} to answer… <span class="bounce" style="display:inline-block">✍️</span></div>${skipUI}`;
+    }else{
+      html+=`<div class="bubbles"><div class="bubble"><h4>You 💗</h4><p>${esc(mine)}</p></div>
+        ${Net.connected?`<div class="bubble b2"><h4>${esc(Net.partner)} 💜</h4><p>${esc(theirs)}</p></div>`:'<div class="bubble b2"><h4>…</h4><p>Connect with your love to see their answer 💌</p></div>'}</div>
+        <div class="center"><p class="note">Talk about it on your call! 📞</p><button class="btn" id="qa-next">Next question 💌</button></div>`;
+    }
+    html+=`<div class="center" style="margin-top:16px"><button class="btn ghost small" id="qa-menu">Change topic</button> <button class="btn ghost small" id="qa-book">📖 Scrapbook</button></div>`;
+    // avoid clobbering a half-typed answer on soft re-render
+    const typed=$('#qa-t')?$('#qa-t').value:'';
+    const key=id+(mine===undefined?'a':both?'c':'w')+(sk.me?'M':'')+(sk.them?'T':'');
+    if(soft&&el.dataset.key===key){const w=$('.waiting',el);if(w&&theirs!==undefined&&mine===undefined)return}
+    el.dataset.key=key;el.innerHTML=html;if(typed&&$('#qa-t'))$('#qa-t').value=typed;
+    if(both&&!qaSaved[id]){qaSaved[id]=1;this.save(Q,mine,theirs);typeof quest==='function'&&quest('answer');sfx.reveal();confetti(35);addLove(5);vibe([40,30,40])}
+    $('#qa-lock')&&($('#qa-lock').onclick=()=>{const t=$('#qa-t').value.trim();if(!t){toast('Write something sweet first 💭');return}
+      qaMine[id]=t;Net.send('qa-ans',{id,text:t});sfx.pop();this.render()});
+    $('#qa-t')&&$('#qa-t').addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey))$('#qa-lock').click()});
+    $('#qa-skip')&&($('#qa-skip').onclick=()=>this.askSkip(id));
+    $('#qa-yes')&&($('#qa-yes').onclick=()=>this.askSkip(id));
+    $('#qa-no')&&($('#qa-no').onclick=()=>{sk.them=false;Net.send('qa-skip',{id,act:'no'});this.render()});
+    $('#qa-cancel')&&($('#qa-cancel').onclick=()=>{sk.me=false;Net.send('qa-skip',{id,act:'cancel'});this.render()});
+    $('#qa-next')&&($('#qa-next').onclick=()=>this.next());
+    $('#qa-menu').onclick=()=>{qaSess=null;this.render()};
+    $('#qa-book').onclick=()=>this.book()},
+  askSkip(id){if(!Net.connected)return this.next();const s=qaSkip[id]||(qaSkip[id]={});s.me=true;Net.send('qa-skip',{id,act:'ask'});
+    if(s.them)this.doSkip(id);else{sfx.tap();this.render()}},
+  doSkip(id){delete qaSkip[id];toast('⏭ Skipped — you both agreed 💞');this.next()},
+  next(){qaSess.i++;Net.send('qa-next',{i:qaSess.i});sfx.tap();this.render()},
+  save(Q,mine,theirs){const h=this.hist();h.unshift({id:Q.id,q:Q.q,mine,theirs:theirs??null,who:Net.partner,date:new Date().toLocaleDateString()});LS.set('lg_qa_hist',h.slice(0,300))},
+  menu(){const el=this.el,h=this.hist();$('#crumb').textContent='';
+    el.innerHTML=`<div class="center"><p style="font-size:18px">We both answer the <b>same question</b>. Nobody peeks until <b>both</b> have locked in — then the answers appear on both screens. 💞</p></div>
+      <div class="chips">${Object.entries(QB).map(([k,c])=>`<button class="chip" data-c="${k}"><b>${c.emoji}</b>${c.name}<br><small>${c.qs.length} questions</small></button>`).join('')}
+      <button class="chip" data-c="mix" style="background:linear-gradient(135deg,#ffe0ee,#e6dcff)"><b>🎲</b>Surprise Mix<br><small>40 random</small></button></div>
+      <div class="center row" style="justify-content:center"><button class="btn alt" id="qa-us">✏️ Write our own "Just Us" questions</button><button class="btn ghost" id="qa-book">📖 Our Scrapbook (${h.length})</button></div>
+      ${Net.connected?'':'<p class="note center" style="margin-top:12px">Connect with your love so you both see the same questions live 💌</p>'}`;
+    $$('.chip',el).forEach(b=>b.onclick=()=>this.begin(b.dataset.c));$('#qa-book').onclick=()=>this.book();$('#qa-us').onclick=()=>this.usEditor()},
+  book(){const el=this.el,h=this.hist();$('#crumb').textContent='';
+    el.innerHTML=`<div class="row" style="justify-content:space-between"><h3>📖 Our Scrapbook</h3><button class="btn ghost small" id="qa-back">← Back</button></div>
+      ${h.length?h.map(x=>`<div class="hist"><small>${esc(x.date)} · ${esc(QB[x.id.split('-')[0]].emoji)}</small><p><b>${esc(x.q)}</b></p><p>💗 <b>You:</b> ${esc(x.mine)}</p>${x.theirs!==null?`<p>💜 <b>${esc(x.who||'Them')}:</b> ${esc(x.theirs)}</p>`:''}</div>`).join(''):'<p class="center note">Your answered questions will collect here like a little love diary. 🥰</p>'}`;
+    $('#qa-back').onclick=()=>this.render()},
+  finish(){this.el.innerHTML=`<div class="center"><div class="big-heart">🏆</div><h2>You finished the whole set!</h2><p>That's a lot of love shared. 💞</p><button class="btn" id="qa-menu">Pick another topic</button></div>`;confetti(100);sfx.win();$('#qa-menu').onclick=()=>{qaSess=null;this.render()}},
+  stop(){}};
+
+/* ---- Tic-Tac-Toe ---- */
+Games.ttt={title:'Tic-Tac-Toe',
+  start(el){const S=this.s={b:Array(9).fill(''),turn:'X',over:false,win:[],mine:Net.role==='host'?'X':'O'};
+    el.innerHTML=`<div class="status" id="ts"></div><div class="ttt" id="tb"></div><div class="center"><button class="btn small" id="tr">🔄 New game</button></div>`;
+    $('#tr').onclick=()=>{this.reset();Net.send('ttt-reset')};
+    Net.on('ttt-move',i=>current==='ttt'&&this.move(i,S.turn,true));Net.on('ttt-reset',()=>current==='ttt'&&this.reset());
+    this.draw()},
+  snap(){const S=this.s;return S.b.some(x=>x)?{b:S.b,turn:S.turn,over:S.over,win:S.win,winner:S.winner,draw:S.draw}:null},
+  restore(d){Object.assign(this.s,d);this.draw()},
+  reset(){const S=this.s;S.b=Array(9).fill('');S.turn='X';S.over=false;S.win=[];delete S.draw;delete S.winner;this.draw()},
+  move(i,sym,remote){const S=this.s;if(S.over||S.b[i])return;
+    if(!remote&&Net.connected&&sym!==S.mine)return;
+    S.b[i]=sym;sfx.pop();if(!remote)Net.send('ttt-move',i);else vibe(30);
+    const L=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+    const w=L.find(l=>l.every(x=>S.b[x]===sym));
+    if(w){S.over=true;S.win=w;S.winner=sym;sfx.win();confetti();if(!Net.connected||sym===S.mine)addLove(10)}else if(S.b.every(x=>x)){S.over=true;S.draw=true}else S.turn=sym==='X'?'O':'X';
+    this.draw(i)},
+  draw(n){const S=this.s;if(!$('#tb'))return;
+    $('#tb').innerHTML=S.b.map((v,i)=>`<button class="${v} ${S.win.includes(i)?'win':''} ${i===n?'pop':''}" data-i="${i}" ${v||S.over?'disabled':''}>${v==='X'?'💗':v==='O'?'⭐':''}</button>`).join('');
+    $$('#tb button').forEach(b=>b.onclick=()=>this.move(+b.dataset.i,S.turn,false));
+    $('#ts').textContent=S.over?(S.draw?"It's a draw! 🤝":(!Net.connected?`${S.winner==='X'?'💗':'⭐'} wins!`:S.winner===S.mine?'You win! 🎉':`${Net.partner} wins! 🥳`)):
+      (Net.connected?(S.turn===S.mine?`Your turn (${S.mine==='X'?'💗':'⭐'})`:`${Net.partner} is thinking… 🤔`):`${S.turn==='X'?'💗':'⭐'}'s turn`)},
+  stop(){}};
+
+/* ---- Connect 4 ---- */
+Games.c4={title:'Connect 4',
+  start(el){const S=this.s={g:Array.from({length:6},()=>Array(7).fill('')),turn:'r',over:false,mine:Net.role==='host'?'r':'y',win:[]};
+    el.innerHTML=`<div class="status" id="cs"></div><div class="c4" id="cb"></div><div class="center"><button class="btn small" id="cr">🔄 New game</button></div>`;
+    $('#cr').onclick=()=>{this.reset();Net.send('c4-reset')};
+    Net.on('c4-move',c=>current==='c4'&&this.drop(c,S.turn,true));Net.on('c4-reset',()=>current==='c4'&&this.reset());this.draw()},
+  snap(){const S=this.s;return S.g.some(r=>r.some(x=>x))?{g:S.g,turn:S.turn,over:S.over,win:S.win,winner:S.winner,draw:S.draw}:null},
+  restore(d){Object.assign(this.s,d);this.draw()},
+  reset(){const S=this.s;S.g=Array.from({length:6},()=>Array(7).fill(''));S.turn='r';S.over=false;S.win=[];delete S.draw;delete S.winner;this.draw()},
+  drop(c,sym,remote){const S=this.s;if(S.over)return;if(!remote&&Net.connected&&sym!==S.mine)return;
+    let r=5;while(r>=0&&S.g[r][c])r--;if(r<0)return;S.g[r][c]=sym;sfx.pop();if(!remote)Net.send('c4-move',c);else vibe(30);
+    const dirs=[[0,1],[1,0],[1,1],[1,-1]];let win=null;
+    for(const[dr,dc]of dirs){const line=[[r,c]];for(const k of[1,-1]){let rr=r+dr*k,cc=c+dc*k;while(S.g[rr]?.[cc]===sym){line.push([rr,cc]);rr+=dr*k;cc+=dc*k}}if(line.length>=4)win=line}
+    if(win){S.over=true;S.win=win;S.winner=sym;sfx.win();confetti();if(!Net.connected||sym===S.mine)addLove(10)}else if(S.g[0].every(x=>x)){S.over=true;S.draw=true}else S.turn=sym==='r'?'y':'r';
+    this.draw([r,c])},
+  draw(nw){const S=this.s;if(!$('#cb'))return;
+    $('#cb').innerHTML=S.g.flatMap((row,r)=>row.map((v,c)=>`<div class="cell ${v} ${nw&&nw[0]===r&&nw[1]===c?'new':''} ${S.win.some(([a,b])=>a===r&&b===c)?'w':''}" data-c="${c}" style="--drop:${r+1}"></div>`)).join('');
+    $$('#cb .cell').forEach(el=>el.onclick=()=>this.drop(+el.dataset.c,S.turn,false));
+    const nm=s=>s==='r'?'🔴':'🟡';
+    $('#cs').textContent=S.over?(S.draw?"Draw! 🤝":(!Net.connected?`${nm(S.winner)} wins!`:S.winner===S.mine?'You win! 🎉':`${Net.partner} wins! 🥳`)):
+      (Net.connected?(S.turn===S.mine?`Your turn ${nm(S.mine)}`:`${Net.partner} is thinking… 🤔`):`${nm(S.turn)}'s turn`)},
+  stop(){}};
+
+/* ---- Memory Match ---- */
+let partnerPhotos=[];Net.on('photos',p=>{partnerPhotos=p||[]});
+const EMO=['🐻','🦋','🍓','🌈','🐱','🍩','🌙','🧸','🌻','🍒','🦄','🍕'];
+Games.mem={title:'Memory Match',
+  start(el){this.s={deck:[],flipped:[],matched:[],turn:'host',score:{host:0,guest:0},lock:false,started:false};
+    el.innerHTML=`<p class="center note">Upload pics of you two — they become the cards! They're shared with your partner automatically 📸</p>
+      <div class="center"><label class="btn alt small">📷 Add photos<input type="file" id="pf" accept="image/*" multiple hidden></label>
+      <button class="btn ghost small" id="pc">Clear mine</button></div><div class="thumbs" id="pt" style="justify-content:center"></div>
+      <div class="center"><button class="btn" id="ms">🎮 Start game</button></div>
+      <div class="scores" id="msc"></div><div class="status" id="mst"></div><div class="mem" id="mb"></div>`;
+    this.thumbs();
+    $('#pf').onchange=async e=>{const cur=LS.get('lg_photos',[]);for(const f of[...e.target.files].slice(0,8)){if(cur.length>=8)break;cur.push(await resizeImg(f,150))}LS.set('lg_photos',cur);Net.send('photos',cur);this.thumbs();toast('Photos added 💖')};
+    $('#pc').onclick=()=>{LS.set('lg_photos',[]);Net.send('photos',[]);this.thumbs()};
+    $('#ms').onclick=()=>{const imgs=shuffle([...LS.get('lg_photos',[]),...partnerPhotos]).slice(0,8);
+      const faces=[...imgs.map(s=>({img:s})),...shuffle(EMO).slice(0,8-imgs.length).map(e=>({e}))];
+      const deck=shuffle([...faces,...faces].map((f,i)=>({...f,id:i})));
+      const d={deck,first:Net.role};this.begin(d);Net.send('mem-start',d)};
+    Net.on('mem-start',d=>current==='mem'&&this.begin(d));Net.on('mem-flip',i=>current==='mem'&&this.flip(i,true))},
+  snap(){const S=this.s;return S.started?{deck:S.deck,flipped:S.flipped,matched:S.matched,turn:S.turn,score:S.score}:null},
+  restore(d){this.begin({deck:d.deck,first:d.turn});Object.assign(this.s,{flipped:d.flipped,matched:d.matched,score:d.score});this.update()},
+  thumbs(){$('#pt').innerHTML=LS.get('lg_photos',[]).map(s=>`<img src="${s}">`).join('')||'<span class="note">No photos yet — emoji cards will be used 🐻</span>'},
+  begin(d){const S=this.s;S.deck=d.deck;S.turn=d.first;S.flipped=[];S.matched=[];S.score={host:0,guest:0};S.lock=false;S.started=true;sfx.pop();
+    $('#mb').innerHTML=S.deck.map((c,i)=>`<button class="mcard" data-i="${i}"><div class="in"><div class="bk">💗</div><div class="fr">${c.img?`<img src="${c.img}">`:c.e}</div></div></button>`).join('');
+    $$('#mb .mcard').forEach(b=>b.onclick=()=>this.flip(+b.dataset.i,false));this.update()},
+  key(c){return c.img||c.e},
+  flip(i,remote){const S=this.s;if(!S.started||S.lock||S.flipped.includes(i)||S.matched.includes(i))return;
+    if(!remote&&!canAct(S.turn))return;
+    S.flipped.push(i);sfx.tap();if(!remote)Net.send('mem-flip',i);this.update();
+    if(S.flipped.length===2){S.lock=true;const[a,b]=S.flipped;
+      setTimeout(()=>{if(!$('#mb'))return;
+        if(this.key(S.deck[a])===this.key(S.deck[b])){S.matched.push(a,b);S.score[S.turn]++;sfx.match();
+          if(S.matched.length===S.deck.length){sfx.win();confetti();const h=S.score.host,g=S.score.guest;if(!Net.connected||(h>=g?'host':'guest')===Net.role)addLove(10)}}
+        else{S.turn=S.turn==='host'?'guest':'host'}
+        S.flipped=[];S.lock=false;this.update()},950)}},
+  update(){const S=this.s;if(!$('#mb'))return;
+    $$('#mb .mcard').forEach((b,i)=>{b.classList.toggle('f',S.flipped.includes(i));b.classList.toggle('m',S.matched.includes(i))});
+    if(!S.started){$('#msc').innerHTML='';$('#mst').textContent='';return}
+    const done=S.deck.length&&S.matched.length===S.deck.length;
+    $('#msc').innerHTML=['host','guest'].map(s=>`<div class="score ${S.turn===s&&!done?'turn':''}">${pName(s)}: ${S.score[s]} 💖</div>`).join('');
+    if(done){const h=S.score.host,g=S.score.guest;$('#mst').textContent=h===g?"It's a tie! 💞":(!Net.connected||((h>g)?'host':'guest')===Net.role?'🎉 You win!':`${Net.partner} wins! 🥳`)}
+    else $('#mst').textContent=Net.connected?(canAct(S.turn)?'Your turn ✨':`${Net.partner}'s turn…`):''},
+  stop(){}};
+function resizeImg(file,size){return new Promise(res=>{const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{
+  const c=document.createElement('canvas');c.width=c.height=size;const x=c.getContext('2d');const m=Math.min(im.width,im.height);
+  x.drawImage(im,(im.width-m)/2,(im.height-m)/2,m,m,0,0,size,size);res(c.toDataURL('image/jpeg',.7))};im.src=r.result};r.readAsDataURL(file)})}
+
+/* ---- Battleship ---- */
+Games.bs={title:'Battleship',
+  start(el){this.el=el;
+    if(!Net.connected){el.innerHTML='<div class="center"><div class="big-heart">⚓</div><p>Battleship needs two captains! Connect with your love first.</p></div>';this.s=null;return}
+    const S=this.s={cells:{},ships:[],incoming:{},marks:{},ready:false,theirReady:false,started:false,turn:'host',over:false,won:false};
+    this.place();
+    Net.on('bs-ready',()=>{if(current==='bs'){S.theirReady=true;this.check()}});
+    Net.on('bs-fire',i=>current==='bs'&&this.incoming(i));
+    Net.on('bs-res',d=>current==='bs'&&this.result(d));
+    Net.on('bs-again',()=>current==='bs'&&this.start(this.el));
+    this.render()},
+  snap(){return this.s?{ready:this.s.ready}:null},
+  restore(d){if(d&&d.ready&&this.s){this.s.theirReady=true;this.check()}},
+  place(){const S=this.s;S.cells={};S.ships=[];
+    for(const len of[4,3,3,2,2]){for(let t=0;t<200;t++){const h=Math.random()<.5,r=Math.floor(Math.random()*(h?8:9-len)),c=Math.floor(Math.random()*(h?9-len:8));
+      const idx=Array.from({length:len},(_,k)=>h?r*8+c+k:(r+k)*8+c);if(idx.some(i=>S.cells[i]!==undefined))continue;
+      const id=S.ships.length;idx.forEach(i=>S.cells[i]=id);S.ships.push(idx);break}}},
+  check(){const S=this.s;if(S.ready&&S.theirReady&&!S.started){S.started=true;sfx.win();toast('⚓ Battle begins! Host fires first');this.render()}else this.render()},
+  fire(i){const S=this.s;if(!S.started||S.over||S.turn!==Net.role||S.marks[i])return;S.turn='wait';sfx.tap();Net.send('bs-fire',i);this.render()},
+  incoming(i){const S=this.s;const hit=S.cells[i]!==undefined;S.incoming[i]=hit;
+    const ship=hit?S.ships[S.cells[i]]:null,sunk=hit&&ship.every(k=>S.incoming[k]);
+    const lost=S.ships.flat().every(k=>S.incoming[k]);
+    Net.send('bs-res',{i,hit,sunk:sunk?ship:null,lost});hit?(sfx.boom(),vibe(120)):sfx.splash();
+    if(lost){S.over=true;S.won=false;sfx.bad()}else S.turn=Net.role;this.render()},
+  result(d){const S=this.s;S.marks[d.i]=d.hit?'h':'m';if(d.sunk){d.sunk.forEach(k=>S.marks[k]='h');toast('🔥 You sank a ship!')}
+    d.hit?sfx.boom():sfx.splash();
+    if(d.lost){S.over=true;S.won=true;sfx.win();confetti();addLove(15)}else S.turn=Net.role==='host'?'guest':'host';this.render()},
+  render(){const S=this.s,el=this.el;if(!S||current!=='bs')return;
+    const my=Array.from({length:64},(_,i)=>{const c=S.cells[i]!==undefined;const inc=S.incoming[i];return `<div class="${c?'ship':''} ${inc===true?'h':inc===false?'m':''}">${inc===true?'💥':inc===false?'🌊':''}</div>`}).join('');
+    const en=Array.from({length:64},(_,i)=>{const m=S.marks[i];return `<div data-i="${i}" class="${m||''}">${m==='h'?'💥':m==='m'?'🌊':''}</div>`}).join('');
+    const my_turn=S.started&&!S.over&&S.turn===Net.role;
+    const msg=S.over?(S.won?'🎉 You sank the whole fleet!':`💔 ${Net.partner} sunk your fleet!`):!S.started?(S.ready?`Ready! Waiting for ${Net.partner}… ⚓`:'Arrange your fleet, then tap Ready!'):my_turn?'🎯 Your turn — fire!':`${Net.partner} is aiming…`;
+    el.innerHTML=`<div class="status">${msg}</div>
+      ${S.started?`<h4 class="center" style="margin:4px">🎯 ${esc(Net.partner)}'s waters</h4><div class="bs enemy ${my_turn?'':'dim'}" id="ben">${en}</div>`:''}
+      <h4 class="center" style="margin:4px">🚢 Your fleet</h4><div class="bs" id="bmy">${my}</div>
+      <div class="center" style="margin-top:10px">${!S.started&&!S.ready?`<button class="btn ghost small" id="bre">🔀 Rearrange</button> <button class="btn" id="brd">⚓ Ready!</button>`:''}${S.over?'<button class="btn" id="bag">Play again</button>':''}</div>`;
+    $$('#ben div').forEach(d=>d.onclick=()=>this.fire(+d.dataset.i));
+    $('#bre')&&($('#bre').onclick=()=>{this.place();this.render()});
+    $('#brd')&&($('#brd').onclick=()=>{S.ready=true;Net.send('bs-ready');this.check()});
+    $('#bag')&&($('#bag').onclick=()=>{Net.send('bs-again');this.start(this.el)})},
+  stop(){}};
+
+/* ---- Rock Paper Scissors ---- */
+Games.rps={title:'Rock Paper Scissors',
+  start(el){const S=this.s={mine:null,theirs:null,sm:0,st:0,busy:false};this.el=el;
+    Net.on('rps-pick',p=>{if(current!=='rps')return;S.theirs=p;this.go()});this.draw()},
+  draw(msg){const S=this.s,el=this.el;if(!$('#gameBody'))return;
+    el.innerHTML=`<div class="scores"><div class="score">You: ${S.sm}</div><div class="score">${esc(Net.connected?Net.partner:'Computer')}: ${S.st}</div></div>
+      <div class="arena" id="arena"><span id="am">❔</span><span id="at">❔</span></div>
+      <div class="status" id="rs">${msg||(S.mine?`Waiting for ${esc(Net.partner)}… 👀`:'Choose your move!')}</div>
+      <div class="rps">${['✊','✋','✌️'].map(e=>`<button data-e="${e}" class="${S.mine===e?'sel':''}" ${S.busy||S.mine?'disabled':''}>${e}</button>`).join('')}</div>`;
+    $$('.rps button').forEach(b=>b.onclick=()=>{S.mine=b.dataset.e;sfx.pop();Net.send('rps-pick',S.mine);if(!Net.connected)S.theirs=['✊','✋','✌️'][Math.floor(Math.random()*3)];this.go()})},
+  go(){const S=this.s;if(!S.mine||!S.theirs){this.draw();return}S.busy=true;this.draw('…3… 2… 1…');
+    $('#am').textContent=$('#at').textContent='✊';$('#am').classList.add('shake');$('#at').classList.add('shake');
+    [0,1,2].forEach(i=>beep(400+i*80,.1,'triangle',.12,i*.4));
+    setTimeout(()=>{if(current!=='rps')return;const a=S.mine,b=S.theirs;$('#am').textContent=a;$('#at').textContent=b;$('#am').classList.remove('shake');$('#at').classList.remove('shake');
+      const beats={'✊':'✌️','✋':'✊','✌️':'✋'};let m;
+      if(a===b)m="It's a tie! 😄";else if(beats[a]===b){S.sm++;m='You win this round! 🎉';sfx.win();addLove(2)}else{S.st++;m=`${Net.connected?esc(Net.partner):'Computer'} wins this round! 😜`;sfx.bad()}
+      $('#rs').innerHTML=m;$('.scores').innerHTML=`<div class="score">You: ${S.sm}</div><div class="score">${esc(Net.connected?Net.partner:'Computer')}: ${S.st}</div>`;
+      setTimeout(()=>{if(current!=='rps')return;S.mine=S.theirs=null;S.busy=false;this.draw()},2200)},1300)},
+  stop(){}};
+
+/* ---- Hangman ---- */
+const HW=['KISSES','CUDDLE','FOREVER','SWEETHEART','ROMANCE','HONEYMOON','BUTTERFLIES','MOONLIGHT','VALENTINE','SOULMATE','ADVENTURE','PICNIC','LOVEBIRDS','SUNSET','CHOCOLATE','ROSES','SNUGGLES','DARLING','BLUSHING','DREAMS','SUNFLOWER','STARGAZING','CANDLELIGHT','TOGETHER','MISSYOU'];
+Games.hang={title:'Guess the Word',
+  start(el){this.el=el;const S=this.s={word:'',guessed:[],setter:null,hint:''};
+    Net.on('hg-word',d=>{if(current!=='hang')return;Object.assign(S,{word:d.word,hint:d.hint,guessed:[],setter:d.rnd?null:(Net.role==='host'?'guest':'host')});sfx.reveal();this.draw()});
+    Net.on('hg-guess',l=>{if(current!=='hang')return;this.guess(l,true)});
+    Net.on('hg-reset',()=>{if(current==='hang'){Object.assign(S,{word:'',guessed:[],setter:null,hint:''});this.draw()}});
+    this.draw()},
+  snap(){const S=this.s;return S.word?{word:S.word,guessed:S.guessed,setter:S.setter,hint:S.hint}:null},
+  restore(d){Object.assign(this.s,d);this.draw()},
+  lives(){return 6-this.s.guessed.filter(l=>!this.s.word.includes(l)).length},
+  state(){const S=this.s;if(this.lives()<=0)return'lost';if([...S.word].every(c=>S.guessed.includes(c)))return'won';return'play'},
+  guess(l,remote){const S=this.s;if(!S.word||S.guessed.includes(l)||this.state()!=='play')return;
+    if(!remote){if(S.setter&&S.setter===Net.role)return;Net.send('hg-guess',l)}
+    S.guessed.push(l);S.word.includes(l)?sfx.match():sfx.bad();
+    if(this.state()==='won'){sfx.win();confetti();if(!S.setter||S.setter!==Net.role)addLove(8)}this.draw()},
+  draw(){const S=this.s,el=this.el;if(!$('#gameBody'))return;
+    if(!S.word){el.innerHTML=`<div class="center"><p style="font-size:18px">One of you picks a secret word, the other guesses it. 6 hearts, 6 mistakes! 💗</p>
+      ${Net.connected?`<div class="row" style="max-width:420px;margin:12px auto;flex-wrap:nowrap"><input id="hw" maxlength="14" placeholder="Secret word (letters only)"><button class="btn" id="hs">Send 💌</button></div>
+      <input id="hh" maxlength="40" placeholder="Hint (optional)" style="max-width:420px;margin-bottom:10px">`:''}
+      <button class="btn alt" id="hr">🎲 Random word ${Net.connected?'for both':''}</button></div>`;
+      $('#hs')&&($('#hs').onclick=()=>{const w=$('#hw').value.toUpperCase().replace(/[^A-Z]/g,'');if(w.length<3){toast('At least 3 letters 🔤');return}
+        Object.assign(S,{word:w,hint:$('#hh').value.trim(),guessed:[],setter:Net.role});Net.send('hg-word',{word:w,hint:S.hint});this.draw()});
+      $('#hr').onclick=()=>{const w=HW[Math.floor(Math.random()*HW.length)];Object.assign(S,{word:w,hint:'Love-themed 💕',guessed:[],setter:null});Net.send('hg-word',{word:w,hint:S.hint,rnd:true});this.draw()};
+      return}
+    const st=this.state(),lives=this.lives(),canG=!(S.setter&&S.setter===Net.role);
+    el.innerHTML=`<div class="lives">${'💗'.repeat(lives)}${'💔'.repeat(6-lives)}</div>
+      <div class="hg-word">${[...S.word].map(c=>`<span>${S.guessed.includes(c)||st==='lost'?c:''}</span>`).join('')}</div>
+      ${S.hint?`<p class="center note">Hint: ${esc(S.hint)}</p>`:''}
+      <div class="status">${st==='won'?(canG?'🎉 You got it!':`🎉 ${esc(Net.partner)} guessed it!`):st==='lost'?`💔 Out of hearts! The word was ${S.word}`:(canG?'Pick a letter!':`👀 Watching ${esc(Net.partner)} guess…`)}</div>
+      <div class="kb">${'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(l=>`<button data-l="${l}" class="${S.guessed.includes(l)?(S.word.includes(l)?'ok':'no'):''}" ${S.guessed.includes(l)||st!=='play'||!canG?'disabled':''}>${l}</button>`).join('')}</div>
+      ${st!=='play'?'<div class="center"><button class="btn" id="hn">Play again 🔁</button></div>':''}`;
+    $$('.kb button').forEach(b=>b.onclick=()=>this.guess(b.dataset.l,false));
+    $('#hn')&&($('#hn').onclick=()=>{Object.assign(S,{word:'',guessed:[],setter:null,hint:''});Net.send('hg-reset');this.draw()})},
+  stop(){}};
+
+/* ---- Draw together ---- */
+Games.draw={title:'Draw Together',
+  start(el){const S=this.s={color:'#ff6fa5',size:6,stamp:null,strokes:[]};
+    const cols=['#ff6fa5','#9b7bff','#6ec3ff','#5fd3b3','#ffd766','#ff9a5c','#4a2c5a','#ffffff'];
+    el.innerHTML=`<canvas id="dcv" width="900" height="600"></canvas>
+      <div class="pal">${cols.map(c=>`<button class="sw ${c===S.color?'sel':''}" data-c="${c}" style="background:${c}"></button>`).join('')}
+        <input type="range" id="dsz" min="2" max="30" value="6"><span>${['💗','⭐','🌸','🦋'].map(e=>`<button class="stamp" data-s="${e}">${e}</button>`).join('')}</span></div>
+      <div class="center"><button class="btn ghost small" id="dcl">🧽 Clear</button> <button class="btn mint small" id="dsv">💾 Save picture</button></div>`;
+    const c=$('#dcv'),x=c.getContext('2d');this.x=x;this.clear(false);
+    $$('.sw').forEach(b=>b.onclick=()=>{S.color=b.dataset.c;S.stamp=null;$$('.sw').forEach(z=>z.classList.toggle('sel',z===b));$$('.stamp').forEach(z=>z.classList.remove('sel'))});
+    $$('.stamp').forEach(b=>b.onclick=()=>{S.stamp=S.stamp===b.dataset.s?null:b.dataset.s;$$('.stamp').forEach(z=>z.classList.toggle('sel',z===b&&S.stamp))});
+    $('#dsz').oninput=e=>S.size=+e.target.value;
+    $('#dcl').onclick=()=>{this.clear(true)};
+    $('#dsv').onclick=()=>{const a=document.createElement('a');a.download='our-drawing.png';a.href=c.toDataURL('image/png');a.click()};
+    let last=null,down=false;
+    const pos=e=>{const r=c.getBoundingClientRect();return[(e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height]};
+    c.onpointerdown=e=>{c.setPointerCapture(e.pointerId);down=true;const p=pos(e);
+      if(S.stamp){const s={st:S.stamp,x:p[0],y:p[1],z:S.size};this.apply(s);Net.send('dr',s);down=false;return}
+      last=p;const s={x1:p[0],y1:p[1],x2:p[0],y2:p[1],c:S.color,w:S.size};this.apply(s);Net.send('dr',s)};
+    c.onpointermove=e=>{if(!down||!last)return;const p=pos(e);const s={x1:last[0],y1:last[1],x2:p[0],y2:p[1],c:S.color,w:S.size};last=p;this.apply(s);Net.send('dr',s)};
+    c.onpointerup=c.onpointercancel=()=>{down=false;last=null};
+    Net.on('dr',s=>current==='draw'&&this.apply(s));Net.on('dr-clear',()=>current==='draw'&&this.clear(false))},
+  apply(s){const x=this.x;if(!x)return;this.s.strokes.push(s);const W=900,H=600;
+    if(s.st){x.font=(30+s.z*3)+'px serif';x.textAlign='center';x.textBaseline='middle';x.fillText(s.st,s.x*W,s.y*H);return}
+    x.strokeStyle=s.c;x.lineWidth=s.w;x.lineCap='round';x.beginPath();x.moveTo(s.x1*W,s.y1*H);x.lineTo(s.x2*W+.01,s.y2*H);x.stroke()},
+  clear(send){const x=this.x;x.fillStyle='#fffdf5';x.fillRect(0,0,900,600);this.s.strokes=[];if(send)Net.send('dr-clear')},
+  snap(){const s=this.s.strokes;return s.length?s.slice(-4000):null},
+  restore(d){this.clear(false);d.forEach(s=>this.apply(s))},
+  stop(){}};
+
+/* ---- Heartbeat sync ---- */
+Games.beat={title:'Heartbeat Sync',
+  start(el){const S=this.s={mine:0,theirs:0,sync:0,taps:0};
+    el.innerHTML=`<div class="center"><p style="font-size:18px">Tap the heart whenever you're thinking of them. If you both tap at the same moment… magic. ✨</p>
+      <button id="bigheart">💗</button><div class="status" id="bstat">Tap the heart!</div>
+      <div class="scores"><div class="score" id="bs1">Taps: 0</div><div class="score" id="bs2">💞 In sync: 0</div></div></div>`;
+    const h=$('#bigheart');
+    h.onpointerdown=e=>{S.mine=Date.now();S.taps++;this.pulse(h,'pulse');sfx.tap();vibe(30);ringAt(e.clientX||innerWidth/2,e.clientY||innerHeight/2);Net.send('beat');this.chk();this.ui()};
+    Net.on('beat',()=>{if(current!=='beat')return;S.theirs=Date.now();this.pulse($('#bigheart'),'theirs');vibe([50,40,50]);sfx.love();const r=$('#bigheart').getBoundingClientRect();ringAt(r.left+r.width/2,r.top+r.height/2);
+      $('#bstat').textContent=`💜 ${Net.partner} is thinking of you`;this.chk()})},
+  pulse(h,c){h.classList.remove('pulse','theirs');void h.offsetWidth;h.classList.add(c)},
+  chk(){const S=this.s;if(S.mine&&S.theirs&&Math.abs(S.mine-S.theirs)<700){S.sync++;S.mine=S.theirs=0;confetti(60);sfx.win();vibe([100,50,100]);$('#bstat').textContent='💞 IN SYNC!! Same heartbeat!';addLove(3);this.ui()}},
+  ui(){const S=this.s;$('#bs1')&&($('#bs1').textContent='Taps: '+S.taps);$('#bs2')&&($('#bs2').textContent='💞 In sync: '+S.sync)},
+  stop(){}};
+
+/* ---- Quiz (write yours, take theirs) ---- */
+let partnerQuiz=LS.get('lg_pquiz',[]);
+Net.on('quiz',q=>{partnerQuiz=q||[];LS.set('lg_pquiz',partnerQuiz);if(current==='quiz')Games.quiz.menu()});
+Net.on('quiz-score',d=>{LS.set('lg_theirscore',d);toast(`🧠 ${Net.partner} scored ${d.score}/${d.total} on your quiz!`);confetti(40);if(current==='quiz')Games.quiz.menu()});
+Games.quiz={title:'How well do you know me?',
+  start(el){this.el=el;this.menu()},
+  menu(){const el=this.el,mine=LS.get('lg_quiz',[]),ts=LS.get('lg_theirscore',null);
+    el.innerHTML=`<div class="center">
+      <p>Write questions about <b>yourself</b> (with the right answer marked). Your partner takes it and you'll both see the score!</p>
+      <div class="row" style="justify-content:center">
+      <button class="btn" id="qe">✏️ Edit my quiz (${mine.length})</button>
+      <button class="btn alt" id="qt" ${partnerQuiz.length?'':'disabled'}>🎯 Take ${esc(Net.connected?Net.partner:'their')}'s quiz (${partnerQuiz.length})</button></div>
+      ${ts?`<p class="score" style="display:inline-block;margin-top:16px">Their score on your quiz: ${ts.score}/${ts.total} 💖</p>`:''}
+      <p class="note">${Net.connected?'':'Connect with your partner so quizzes get exchanged 💌'}</p>
+      <button class="btn ghost small" id="qs">Try my own quiz (preview)</button></div>`;
+    $('#qe').onclick=()=>this.edit();if(partnerQuiz.length)$('#qt').onclick=()=>this.take(partnerQuiz,true);
+    $('#qs').onclick=()=>mine.length?this.take(mine,false):toast('Write some questions first ✏️')},
+  edit(){const el=this.el;let qs=LS.get('lg_quiz',[]);
+    if(!qs.length)qs=[{q:"What's my favourite food?",o:['','','',''],a:0},{q:"What's my dream holiday?",o:['','','',''],a:0}];
+    const draw=()=>{el.innerHTML=`<p class="note center">Fill in 2-4 answers per question and tick the correct one.</p>`+qs.map((q,i)=>`<div class="qedit" data-i="${i}">
+      <input class="qq" placeholder="Question about you…" value="${esc(q.q)}">
+      ${q.o.map((o,j)=>`<label><input type="radio" name="r${i}" ${q.a===j?'checked':''} data-j="${j}"><input class="oo" data-j="${j}" placeholder="Answer ${j+1}" value="${esc(o)}"></label>`).join('')}
+      <button class="btn ghost small del">🗑 Remove</button></div>`).join('')+
+      `<div class="row" style="justify-content:center"><button class="btn alt small" id="qa2">➕ Add question</button><button class="btn" id="qsave">💾 Save & send</button></div>`;
+      $$('.qedit').forEach(b=>{const i=+b.dataset.i;
+        $('.qq',b).oninput=e=>qs[i].q=e.target.value;
+        $$('.oo',b).forEach(o=>o.oninput=e=>qs[i].o[+o.dataset.j]=e.target.value);
+        $$('input[type=radio]',b).forEach(r=>r.onchange=()=>qs[i].a=+r.dataset.j);
+        $('.del',b).onclick=()=>{qs.splice(i,1);draw()}});
+      $('#qa2').onclick=()=>{qs.push({q:'',o:['','','',''],a:0});draw()};
+      $('#qsave').onclick=()=>{qs=qs.map(q=>({q:q.q.trim(),o:q.o.map(o=>o.trim()),a:q.a})).filter(q=>q.q&&q.o.filter(Boolean).length>=2&&q.o[q.a]);
+        LS.set('lg_quiz',qs);Net.send('quiz',qs);toast('Quiz saved'+(Net.connected?' & sent! 💌':'! It will send when you connect 💌'));this.menu()}};
+    draw()},
+  take(qs,record){const el=this.el;let i=0,score=0;
+    const draw=()=>{if(i>=qs.length){const pct=score/qs.length;
+        el.innerHTML=`<div class="center"><h2>${score}/${qs.length}</h2><p style="font-size:20px">${pct===1?'PERFECT! You know them so well 😍':pct>.5?'Nice! You really pay attention 🥰':'Time for more late-night calls 😘'}</p><button class="btn" id="qb">Done</button></div>`;
+        sfx.win();confetti();addLove(score*2);if(record)Net.send('quiz-score',{score,total:qs.length});$('#qb').onclick=()=>this.menu();return}
+      const q=qs[i];const opts=q.o.map((o,j)=>({o,j})).filter(x=>x.o);
+      el.innerHTML=`<div class="progress"><i style="width:${i/qs.length*100}%"></i></div><h3 style="margin-top:16px">${i+1}. ${esc(q.q)}</h3>`+opts.map(x=>`<button class="opt" data-j="${x.j}">${esc(x.o)}</button>`).join('');
+      $$('.opt').forEach(b=>b.onclick=()=>{const ok=+b.dataset.j===q.a;$$('.opt').forEach(x=>{x.disabled=true;if(+x.dataset.j===q.a)x.classList.add('good')});
+        if(ok){score++;sfx.match();floatEmoji('💖')}else{b.classList.add('bad');sfx.bad()}
+        setTimeout(()=>{i++;draw()},1300)})};
+    draw()},
+  stop(){}};
+
+/* ---- Would You Rather ---- */
+const WYR=[["Cuddle on the couch all day","Explore a new city together"],["Never text again, only call","Never call again, only text"],["Live by the beach","Live in a cozy cabin in the mountains"],["Travel the world together for a year","Have a dream house together right now"],["Always know what I'm thinking","Always know what I'm feeling"],["Sweet breakfast in bed","Candlelit dinner"],["Watch every movie together","Play every game together"],["A surprise visit","A surprise gift"],["Pizza forever","Pasta forever"],["Stargazing all night","Sunrise picnic"],["Have a pet cat together","Have a pet dog together"],["Slow dance in the kitchen","Sing badly in the car"],["A love letter every week","A surprise call every day"],["Matching pyjamas","Matching tattoos (tiny!)"],["Rainy day in blankets","Sunny day at the beach"],["Cook together every night","Order takeout and cuddle"]];
+Games.wyr={title:'Would You Rather',
+  start(el){const S=this.s={i:Math.floor(Math.random()*WYR.length),mine:null,theirs:null};this.el=el;
+    Net.on('wyr-pick',d=>{if(current!=='wyr'||d.i!==S.i)return;S.theirs=d.c;this.draw()});Net.on('wyr-next',i=>{if(current!=='wyr')return;S.i=i;S.mine=S.theirs=null;this.draw()});
+    this.draw()},
+  snap(){const S=this.s;return{i:S.i,c:S.mine}},
+  restore(d){const S=this.s;if(d.i!==S.i){S.i=d.i;S.mine=null}S.theirs=d.c;this.draw()},
+  draw(){const S=this.s,el=this.el;if(!$('#gameBody'))return;const q=WYR[S.i];const both=S.mine!==null&&(S.theirs!==null||!Net.connected);
+    const cls=c=>(S.mine===c?'picked':'')+(both&&S.theirs===c&&S.mine===c?' same':'');
+    el.innerHTML=`<div class="wyr">${[0,1].map(c=>`<button data-c="${c}" class="${cls(c)}">${esc(q[c])}${both&&S.theirs===c&&Net.connected?`<div class="note" style="color:inherit">← ${esc(Net.partner)} chose this</div>`:''}</button>`).join('')}</div>
+      <div class="status">${both?(S.mine===S.theirs||!Net.connected?(Net.connected?'Same choice!! 😍 Soulmates':'Great pick!'):'Different picks 😜 opposites attract'):(S.mine!==null?`Waiting for ${esc(Net.partner)}… 👀`:'Pick one!')}</div>
+      <div class="center"><button class="btn" id="wn">Next question ➡️</button></div>`;
+    if(both&&!S.done){S.done=1;if(Net.connected&&S.mine===S.theirs){sfx.win();confetti(60);addLove(3)}else sfx.reveal()}
+    $$('.wyr button').forEach(b=>b.onclick=()=>{if(S.mine!==null)return;S.mine=+b.dataset.c;S.done=0;sfx.pop();Net.send('wyr-pick',{i:S.i,c:S.mine});this.draw()});
+    $('#wn').onclick=()=>{S.i=(S.i+1)%WYR.length;S.mine=S.theirs=null;S.done=0;Net.send('wyr-next',S.i);this.draw()}},
+  stop(){}};
+
+/* ---- Love jar ---- */
+let jarTheirs=LS.get('lg_jar_theirs',[]);
+Net.on('jar',a=>{jarTheirs=a||[];LS.set('lg_jar_theirs',jarTheirs);if(current==='jar')Games.jar.draw()});
+Games.jar={title:'Reasons I Love You',
+  start(el){this.el=el;this.draw()},
+  draw(){const el=this.el,mine=LS.get('lg_jar_mine',[]);
+    el.innerHTML=`<div class="center"><span class="jar" id="jr">🫙</span><p><b>Tap the jar</b> to pull out a reason ${esc(Net.connected?Net.partner:'they')} love${Net.connected?'s':''} you 💌 (${jarTheirs.length} inside)</p>
+      <div id="jn"></div></div><hr style="border:0;border-top:3px dashed #fff;margin:18px 0">
+      <h3>Fill their jar 💗 (${mine.length})</h3>
+      <div class="row" style="flex-wrap:nowrap"><textarea id="jt" rows="2" placeholder="I love how you…"></textarea><button class="btn" id="ja">Add</button></div>
+      <div id="jl">${mine.map((n,i)=>`<div class="qedit row" style="justify-content:space-between">${esc(n)}<button class="btn ghost small" data-d="${i}">✕</button></div>`).join('')}</div>`;
+    $('#jr').onclick=()=>{if(!jarTheirs.length){toast('The jar is empty… for now 🥺');return}
+      const n=jarTheirs[Math.floor(Math.random()*jarTheirs.length)];sfx.love();confetti(30);$('#jn').innerHTML=`<div class="paper">${esc(n)}</div>`};
+    $('#ja').onclick=()=>{const t=$('#jt').value.trim();if(!t)return;mine.push(t);LS.set('lg_jar_mine',mine);Net.send('jar',mine);sfx.pop();toast('Added to their jar 💕');addLove(2);typeof quest==='function'&&quest('create');this.draw()};
+    $$('[data-d]').forEach(b=>b.onclick=()=>{mine.splice(+b.dataset.d,1);LS.set('lg_jar_mine',mine);Net.send('jar',mine);this.draw()})},
+  stop(){}};
+
+/* ---- Date spinner ---- */
+const IDEAS=['🎬 Movie night on call','🍝 Cook the same recipe','🎮 Game marathon','🌌 Stargaze together','🎧 Shared playlist swap','📚 Read to each other','🧁 Bake & compare','🖍️ Draw each other','💃 Dance party','🗺️ Plan our dream trip','📸 Photo scavenger hunt','🛌 Sleep call cuddles'];
+Games.spin={title:'Date Night Spinner',rot:0,
+  start(el){this.ideas=LS.get('lg_ideas',IDEAS);this.rot=0;
+    el.innerHTML=`<div id="wheelbox"><div id="pointer">🔻</div><canvas id="wheel" width="340" height="340"></canvas></div>
+      <div class="status" id="sr"></div><div class="center"><button class="btn" id="sp">🎡 Spin!</button></div>
+      <details style="margin-top:16px"><summary>✏️ Edit ideas</summary><textarea id="ie" rows="6">${esc(this.ideas.join('\n'))}</textarea><button class="btn small mint" id="is" style="margin-top:8px">Save</button></details>`;
+    this.draw();$('#sp').onclick=()=>{if(this.spinning)return;const idx=Math.floor(Math.random()*this.ideas.length);const spins=5+Math.floor(Math.random()*3);Net.send('spin',{idx,spins});this.go(idx,spins)};
+    $('#is').onclick=()=>{const l=$('#ie').value.split('\n').map(s=>s.trim()).filter(Boolean);if(l.length<2){toast('Need at least 2 ideas');return}this.ideas=l;LS.set('lg_ideas',l);this.rot=0;this.draw();toast('Saved 🎀')};
+    Net.on('spin',d=>current==='spin'&&this.go(d.idx,d.spins))},
+  draw(){const c=$('#wheel');if(!c)return;const x=c.getContext('2d'),n=this.ideas.length,R=170,cols=['#ffb3d1','#d4c2ff','#ffe29a','#b5ecd9','#a9dcff'];
+    x.clearRect(0,0,340,340);x.save();x.translate(R,R);x.rotate(this.rot);
+    for(let i=0;i<n;i++){const a=2*Math.PI/n;x.beginPath();x.moveTo(0,0);x.arc(0,0,R,i*a,(i+1)*a);x.fillStyle=cols[i%cols.length];x.fill();
+      x.save();x.rotate(i*a+a/2);x.fillStyle='#4a2c5a';x.font='600 13px Fredoka, sans-serif';x.textAlign='right';x.fillText(this.ideas[i].slice(0,22),R-12,5);x.restore()}
+    x.restore();x.beginPath();x.arc(R,R,20,0,7);x.fillStyle='#fff';x.fill();x.font='20px serif';x.textAlign='center';x.fillText('💗',R,R+7)},
+  go(idx,spins){if(current!=='spin')return;this.spinning=true;const n=this.ideas.length,a=2*Math.PI/n;
+    const target=-Math.PI/2-(idx*a+a/2);const start=this.rot%(2*Math.PI);
+    let end=target-Math.PI*2*spins;while(end>start)end-=2*Math.PI;
+    const t0=performance.now(),D=4200;$('#sr').textContent='…';let lastTick=0;
+    const step=t=>{const p=Math.min(1,(t-t0)/D),e=1-Math.pow(1-p,4);this.rot=start+(end-start)*e;this.draw();
+      const seg=Math.floor(((-this.rot-Math.PI/2)%(2*Math.PI)+2*Math.PI)/a);if(seg!==lastTick&&p<1){lastTick=seg;beep(500+seg*20,.03,'square',.04)}
+      if(p<1&&current==='spin')requestAnimationFrame(step);else{this.spinning=false;if(p>=1){this.rot=end;$('#sr').textContent='Tonight: '+this.ideas[idx]+' 💕';sfx.win();confetti(60);addLove(2)}}};
+    requestAnimationFrame(step)},
+  stop(){this.spinning=false}};
+
+/* ---- Scratch card ---- */
+Net.on('scratch',m=>{LS.set('lg_scratch_in',m);toast('🎟️ '+Net.partner+' sent you a scratch card!');sfx.love();if(current==='scratch')Games.scratch.menu()});
+Games.scratch={title:'Scratch Card',
+  start(el){this.el=el;this.menu()},
+  menu(){const el=this.el,inc=LS.get('lg_scratch_in',null);
+    el.innerHTML=`<div class="center">${inc?`<h3>🎟️ You got a card!</h3><div class="scratchbox"><div class="msg">${esc(inc)}</div><canvas id="sc" width="340" height="190"></canvas></div><p class="note">Scratch with your finger or mouse ✨</p>`:'<p class="note">No card waiting for you yet…</p>'}
+      <hr style="border:0;border-top:3px dashed #fff;margin:18px 0"><h3>Send a card 💌</h3>
+      <div class="row" style="flex-wrap:nowrap"><input id="sm" maxlength="80" placeholder="A secret message for them…"><button class="btn" id="ss">Send</button></div></div>`;
+    $('#ss').onclick=()=>{const m=$('#sm').value.trim();if(!m)return;if(!Net.connected){toast('Connect with your partner to send 💌');return}Net.send('scratch',m);toast('Sent! 🎟️');addLove(2);$('#sm').value=''};
+    if(inc)this.initScratch()},
+  initScratch(){const c=$('#sc'),x=c.getContext('2d');
+    const g=x.createLinearGradient(0,0,340,190);g.addColorStop(0,'#ff9ec4');g.addColorStop(1,'#9b7bff');x.fillStyle=g;x.fillRect(0,0,340,190);
+    x.font='600 22px Fredoka';x.fillStyle='#fff';x.textAlign='center';x.fillText('✨ scratch me ✨',170,100);
+    x.globalCompositeOperation='destination-out';let down=false,done=false;
+    const pos=e=>{const r=c.getBoundingClientRect(),p=e.touches?e.touches[0]:e;return[(p.clientX-r.left)*340/r.width,(p.clientY-r.top)*190/r.height]};
+    const sc=e=>{if(!down)return;e.preventDefault();const[px,py]=pos(e);x.beginPath();x.arc(px,py,20,0,7);x.fill();if(Math.random()<.2)beep(900+Math.random()*300,.03,'triangle',.04);check()};
+    const check=()=>{if(done)return;const d=x.getImageData(0,0,340,190).data;let n=0;for(let i=3;i<d.length;i+=16)if(d[i]===0)n++;
+      if(n/(d.length/16)>.45){done=true;c.style.transition='opacity .6s';c.style.opacity=0;sfx.win();confetti()}};
+    ['mousedown','touchstart'].forEach(v=>c.addEventListener(v,e=>{down=true;sc(e)},{passive:false}));
+    ['mouseup','mouseleave','touchend'].forEach(v=>c.addEventListener(v,()=>down=false));
+    ['mousemove','touchmove'].forEach(v=>c.addEventListener(v,sc,{passive:false}))},
+  stop(){}};
+
+/* ---- Mochi, the shared pet ---- */
+const PET0={name:'Mochi',full:70,joy:70,t:Date.now(),u:0};
+function petGet(){const p=LS.get('lg_pet',PET0),h=Math.max(0,(Date.now()-p.t)/36e5);
+  return{...p,full:Math.max(0,p.full-h*4),joy:Math.max(0,p.joy-h*3),t:Date.now()}}
+Net.on('pet',d=>{LS.set('lg_pet',d.p);const V={feed:'fed',play:'played with',cuddle:'cuddled'};
+  if(current==='pet'){Games.pet.draw(`${Net.partner} ${V[d.act]||'loved'} ${d.p.name}! ${d.act==='feed'?'🍓':d.act==='play'?'🎾':'🤗'}`);floatEmoji(d.act==='feed'?'🍓':d.act==='play'?'🎾':'💗');sfx.love()}});
+Net.on('pet-sync',p=>{if(p.u>petGet().u)LS.set('lg_pet',p)});
+Games.pet={title:'Mochi 🐾',
+  start(el){this.el=el;this.draw();this.iv=setInterval(()=>current==='pet'&&this.draw(this.msg,true),20000)},
+  mood(p){const a=(p.full+p.joy)/2;return a>75?['😸','Mochi is SO happy!']:a>50?['🐱','Mochi is doing okay~']:a>25?['😿','Mochi is feeling lonely… 🥺']:['🙀','Mochi is starving for love!! 😭']},
+  draw(msg,keep){const p=petGet(),[face,txt]=this.mood(p);this.msg=msg||this.msg;const say=msg||(keep?this.msg:null)||txt;
+    this.el.innerHTML=`<div class="petbox"><div class="speech" id="psay">${esc(say)}</div>
+      <button id="pet">${face}</button>
+      <h2 id="pname">${esc(p.name)} <button class="iconbtn" id="prn" style="width:28px;height:28px;font-size:13px">✏️</button></h2>
+      <div class="stat"><span>🍓</span><div class="bar"><i style="width:${p.full}%;background:linear-gradient(90deg,#ffb36b,#ff6fa5)"></i></div></div>
+      <div class="stat"><span>💗</span><div class="bar"><i style="width:${p.joy}%;background:linear-gradient(90deg,#9b7bff,#ff6fa5)"></i></div></div>
+      <div class="row" style="justify-content:center;margin-top:10px"><button class="btn small" data-a="feed">🍓 Feed</button><button class="btn small alt" data-a="play">🎾 Play</button><button class="btn small mint" data-a="cuddle">🤗 Cuddle</button></div>
+      <p class="note">${Net.connected?`You and ${esc(Net.partner)} look after ${esc(p.name)} together.`:'Connect so you can both take care of Mochi!'} Mochi gets hungry over time — check in daily 🐾</p></div>`;
+    $$('[data-a]').forEach(b=>b.onclick=()=>this.act(b.dataset.a));$('#pet').onclick=()=>this.act('cuddle');
+    $('#prn').onclick=()=>{const n=prompt('New name for your pet:',p.name);if(n&&n.trim()){const q=petGet();q.name=n.trim().slice(0,14);q.u=Date.now();LS.set('lg_pet',q);Net.send('pet',{p:q,act:'love'});this.draw()}}},
+  act(k){const p=petGet();if(k==='feed'){p.full=Math.min(100,p.full+25)}else if(k==='play'){p.joy=Math.min(100,p.joy+22);p.full=Math.max(0,p.full-5)}else{p.joy=Math.min(100,p.joy+10)}
+    p.u=Date.now();LS.set('lg_pet',p);Net.send('pet',{p,act:k});
+    const e={feed:'🍓',play:'🎾',cuddle:'💗'}[k],lines={feed:'Nom nom nom! 😋',play:'Wheee!! 🎉',cuddle:'Purrrr… 🥰'};
+    this.draw(lines[k]);const pe=$('#pet');pe.classList.add('boing');floatEmoji(e);sfx.love();vibe(30);addLove(1)},
+  stop(){clearInterval(this.iv)}};
+
+/* ---- Truth or Dare ---- */
+const TRUTHS=["What's a secret talent you've never shown me?","What's the cutest thing you've done because you missed me?","Which photo of me have you looked at the most? 😏","What's your guilty-pleasure song?","What's one habit of mine that secretly makes you smile?","What was your first impression of me?","What's the most romantic thing you've imagined us doing?","What's a nickname for me you've never said out loud?","Which of my texts have you re-read the most?","What's your weirdest fear?","What's the most embarrassing thing you've googled?","What's something you're shy to ask me for?","When did you realise you were falling for me?","What's your biggest turn-on in a person… besides me? 😉","What's a small thing I do that drives you a little crazy (in a cute way)?","What's the first thing you'd do if I appeared at your door right now?"];
+const DARES=["Send a selfie making the silliest face you can 🤪","Sing 10 seconds of a love song on the call 🎤","Draw a portrait of me in 30 seconds and show the camera 🖍️","Do your best impression of me 😂","Say \"I love you\" in three different accents","Blow a kiss to the camera and hold it for 5 seconds 😘","Write me a 2-line poem right now ✍️","Dance for 20 seconds with no music 💃","Speak only in rhymes for the next 2 minutes","Give me your best pick-up line","Draw a heart on your hand and show it","Give me a compliment for every finger on one hand ✋","Make a heart with your hands and hold it for 10 seconds 🫶","Show me your best \"I miss you\" face 🥺","Send me a voice note whispering something sweet 🎧","Show me the most recent thing that made you think of me"];
+Net.on('tod',d=>{Games.tod.card=d;if(current==='tod')Games.tod.draw();else toast(`🎭 ${Net.partner} drew a ${d.kind}!`)});
+Games.tod={title:'Truth or Dare',
+  start(el){this.el=el;this.card=null;this.draw()},
+  pick(k){if(k==='rnd')k=Math.random()<.5?'truth':'dare';const list=k==='truth'?TRUTHS:DARES;const d={kind:k,text:list[Math.floor(Math.random()*list.length)]};this.card=d;Net.send('tod',d);sfx.reveal();this.draw()},
+  snap(){return this.card},restore(d){if(d){this.card=d;this.draw()}},
+  draw(){const c=this.card;this.el.innerHTML=`<div class="center"><p>Pick a card — it shows up on <b>both</b> screens. Whoever's turn it is has to do it! 😈💕</p>
+    <div class="row" style="justify-content:center"><button class="btn" data-k="truth">💬 Truth</button><button class="btn alt" data-k="dare">🔥 Dare</button><button class="btn mint" data-k="rnd">🎲 Surprise me</button></div></div>
+    ${c?`<div class="todcard"><div class="k">${c.kind==='truth'?'💬 TRUTH':'🔥 DARE'}</div><h2>${esc(c.text)}</h2></div><div class="center"><button class="btn small" id="tdone">✅ Done!</button></div>`:''}`;
+    $$('[data-k]').forEach(b=>b.onclick=()=>this.pick(b.dataset.k));
+    $('#tdone')&&($('#tdone').onclick=()=>{confetti(50);sfx.win();addLove(2);this.card=null;this.draw()})},
+  stop(){}};
+
+/* ---- Fortune cookie ---- */
+const FORT=["A long-distance love is a story that ends in a very big hug.","Someone far away is smiling because of you right now.","Your next call will be the best part of your day.","The stars are lined up: expect a sweet surprise.","You are loved more than you know.","Great adventures are coming — and you're holding hands.","The miles are temporary. The love isn't.","Your heart has a home, and it's on the other end of the line.","Today is a perfect day to say 'I miss you'.","A kiss is coming your way… eventually. 😘","Two hearts, one sky, endless love.","Your love story will be told with a happy ending.","Good things come to those who wait — you're almost there.","Tonight, dream of the day you'll never have to say goodbye.","You'll soon receive a message that makes you blush.","The best is yet to come, and it has your name on it."];
+Net.on('fortune',d=>{LS.set('lg_fortune_in',d.text);toast(`🥠 ${Net.partner} sent you a fortune!`);sfx.love();if(current==='fortune')Games.fortune.draw()});
+Games.fortune={title:'Love Fortune Cookie',
+  start(el){this.el=el;this.f=null;this.draw()},
+  draw(){const inc=LS.get('lg_fortune_in',null);
+    this.el.innerHTML=`<div class="center"><button class="cookie" id="ck">🥠</button><p>${this.f?'':'Tap the cookie to crack it!'}</p>
+      ${this.f?`<div class="paper" style="font-size:26px">${esc(this.f)}</div><button class="btn small" id="fs">Send to ${esc(Net.connected?Net.partner:'my love')} 💌</button> <button class="btn ghost small" id="fa">Another 🥠</button>`:''}
+      ${inc?`<hr style="border:0;border-top:3px dashed #fff;margin:18px 0"><h3>💌 From ${esc(Net.partner)}</h3><div class="paper" style="font-size:26px">${esc(inc)}</div>`:''}</div>`;
+    $('#ck').onclick=()=>{this.f=FORT[Math.floor(Math.random()*FORT.length)];sfx.reveal();confetti(30);this.draw();$('#ck').classList.add('crack')};
+    $('#fs')&&($('#fs').onclick=()=>{if(!Net.connected){toast('Connect first to send 💌');return}Net.send('fortune',{text:this.f});toast('Sent! 🥠');addLove(1)});
+    $('#fa')&&($('#fa').onclick=()=>{this.f=null;this.draw()})},
+  stop(){}};
+
+/* ---- Heart Catcher ---- */
+function rng(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+Net.on('hc-start',d=>{if(current==='hc')Games.hc.begin(d.seed)});
+Net.on('hc-live',d=>{const e=$('#hcp');if(e&&current==='hc')e.textContent=`💜 ${Net.partner}: ${d.s}`});
+Net.on('hc-score',d=>{const S=Games.hc.s;if(S&&current==='hc'){S.theirs=d.score;if(S.mine!==null)Games.hc.result()}});
+Games.hc={title:'Heart Catcher',
+  start(el){this.s={running:false,score:0,mine:null,theirs:null};this.el=el;this.menu()},
+  menu(){$('#gameBody').innerHTML=`<div class="center"><p style="font-size:18px">Tap the falling <b>💗 (+1)</b> and <b>🌟 (+3)</b>. Dodge the <b>💔 (−2)</b>! You both play the <b>same</b> hearts at the same time for 20 seconds.</p>
+    <p class="note">Your best: ${LS.get('lg_hcbest',0)}</p><button class="btn" id="hgo">▶ Start!</button></div><div id="hcarea" style="margin-top:14px"></div>`;
+    $('#hgo').onclick=()=>{if(!partnerHere('hc'))return;const seed=Math.floor(Math.random()*1e9);Net.send('hc-start',{seed});this.begin(seed)}},
+  begin(seed){const S=this.s;S.running=false;S.score=0;S.mine=S.theirs=null;cancelAnimationFrame(this.raf);
+    $('#gameBody').innerHTML=`<div class="hud"><span id="hct">⏱ 20</span><span id="hcp" style="font-size:15px;color:var(--purple)"></span><span id="hcs">💗 0</span></div><div id="hcarea"><div class="center" id="hcc" style="font-size:90px;padding-top:110px">3</div></div><div class="status" id="hcr"></div>`;
+    let n=3;const iv=setInterval(()=>{if(current!=='hc'){clearInterval(iv);return}n--;beep(500+n*100,.12,'triangle',.15);if(n>0)$('#hcc')&&($('#hcc').textContent=n);else{clearInterval(iv);this.run(seed)}},900);beep(700,.12,'triangle',.15)},
+  run(seed){const S=this.s,area=$('#hcarea');if(!area)return;area.innerHTML='';S.running=true;const R=rng(seed),items=[];
+    for(let k=0;k<46;k++){const r=R();items.push({t:k*420+R()*180,x:R()*.88,v:.17+R()*.13,type:r<.6?['💗',1]:r<.74?['🌟',3]:r<.82?['💖',2]:['💔',-2],el:null,done:false})}
+    const t0=performance.now(),H=area.clientHeight,W=area.clientWidth;
+    const loop=now=>{if(current!=='hc'||!S.running)return;const el=now-t0;
+      $('#hct').textContent='⏱ '+Math.max(0,Math.ceil((20000-el)/1000));
+      items.forEach(it=>{if(it.done)return;if(el<it.t)return;const y=(el-it.t)*it.v;
+        if(!it.el){const d=document.createElement('div');d.className='fall';d.textContent=it.type[0];d.style.left=(it.x*(W-44))+'px';
+          d.onpointerdown=e=>{e.stopPropagation();if(it.done)return;it.done=true;d.classList.add('gone');setTimeout(()=>d.remove(),300);
+            S.score+=it.type[1];$('#hcs').textContent='💗 '+S.score;Net.send('hc-live',{s:S.score});it.type[1]>0?(it.type[1]>=3?sfx.win():sfx.pop()):sfx.bad();if(it.type[1]<0)vibe(80)};
+          area.appendChild(d);it.el=d}
+        it.el.style.transform=`translateY(${y-40}px)`;if(y>H+10){it.done=true;it.el.remove()}});
+      if(el>=20500){this.end();return}this.raf=requestAnimationFrame(loop)};
+    this.raf=requestAnimationFrame(loop)},
+  end(){const S=this.s;S.running=false;S.mine=Math.max(0,S.score);Net.send('hc-score',{score:S.mine});const best=LS.get('lg_hcbest',0);if(S.mine>best){LS.set('lg_hcbest',S.mine)}
+    if(!Net.connected||S.theirs!==null)this.result();else $('#hcr')&&($('#hcr').textContent=`Final: ${S.mine} 💗 — waiting for ${Net.partner}…`)},
+  result(){const S=this.s;if(!$('#gameBody'))return;let msg;
+    if(!Net.connected)msg=`You caught ${S.mine} 💗! Best: ${LS.get('lg_hcbest',0)}`;
+    else{msg=S.mine>S.theirs?`🎉 You win! ${S.mine} vs ${S.theirs}`:S.mine<S.theirs?`${esc(Net.partner)} wins! ${S.theirs} vs ${S.mine} 🥳`:`Tie!! ${S.mine} each 💞`;if(S.mine>=S.theirs)addLove(5)}
+    sfx.win();confetti(70);
+    $('#gameBody').innerHTML=`<div class="center"><div class="big-heart">🏆</div><h2>${msg}</h2><button class="btn" id="hag">Play again</button></div>`;$('#hag').onclick=()=>this.menu()},
+  stop(){this.s&&(this.s.running=false);cancelAnimationFrame(this.raf)}};
+
+/* ---- little surprises: sparkle trail, themes, logo easter egg ---- */
+(()=>{let last=0;const em=['✨','💗','⭐','🌸','💖'];
+  const burst=(x,y,n)=>{for(let i=0;i<n;i++){const s=document.createElement('div');s.className='spark';s.textContent=em[Math.floor(Math.random()*em.length)];
+    s.style.left=x+'px';s.style.top=y+'px';s.style.setProperty('--dx',(Math.random()-.5)*90+'px');s.style.setProperty('--dy',(Math.random()*-70-10)+'px');document.body.appendChild(s);setTimeout(()=>s.remove(),850)}};
+  addEventListener('pointermove',e=>{if(e.pointerType!=='mouse')return;const n=Date.now();if(n-last<70)return;last=n;burst(e.clientX,e.clientY,1)});
+  addEventListener('pointerdown',e=>{if(e.target.closest&&e.target.closest('#hcarea'))return;burst(e.clientX,e.clientY,5)})})();
+const THEMES=['candy','sunset','night'];
+function applyTheme(t){document.documentElement.dataset.theme=t;const m=document.querySelector('meta[name=theme-color]');m&&(m.content={candy:'#ffe4f1',sunset:'#ffe3cf',night:'#241a4d'}[t])}
+applyTheme(LS.get('lg_theme','candy'));
+$('#themeBtn').onclick=()=>{const t=THEMES[(THEMES.indexOf(LS.get('lg_theme','candy'))+1)%THEMES.length];LS.set('lg_theme',t);applyTheme(t);toast({candy:'🍬 Cotton Candy',sunset:'🌅 Sunset',night:'🌙 Midnight'}[t]);sfx.pop()};
+$('.logo').onclick=()=>{confetti(120);floatEmoji('💖');sfx.love();toast('You found a secret! I love you 💕')};
+$('.logo').style.cursor='pointer';
+
+/* sync pet with partner on connect */
+const _oc=onConnected;onConnected=function(){_oc();Net.send('pet-sync',petGet());Net.send('us',usList())};
+
+setStatus();
+</script>
+<script src="extras.js"></script>
+<script src="garden.js"></script>
+<script src="lovegarden.js"></script>
+<script src="sync.js"></script>
+<script src="videocall.js"></script>
+</body>
+</html>
