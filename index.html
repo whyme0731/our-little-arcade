@@ -611,7 +611,7 @@ const Net={peer:null,conn:null,role:'host',connected:false,handlers:{},partner:'
      because a partner whose page is simply in the background sends nothing and is still perfectly connected. */
   checkLink(){const c=this.conn;if(!c||!this.connected)return;const pc=c.peerConnection,s=pc&&pc.iceConnectionState,dc=c.dataChannel&&c.dataChannel.readyState;
     if(s==='failed'||s==='closed'||dc==='closed'||dc==='closing')return this.deadLink('state '+s+'/'+dc);
-    if(s==='disconnected'){this._disc=this._disc||Date.now();if(Date.now()-this._disc>12000)this.deadLink('disconnected for 12s')}else this._disc=0},
+    if(s==='disconnected'){this._disc=this._disc||Date.now();if(Date.now()-this._disc>30000)this.deadLink('disconnected for 30s')}else this._disc=0},
   deadLink(why){const c=this.conn;if(!c||!this.connected)return;dlog('link is dead ('+why+')');this.connected=false;partnerAt=null;this._downSince=Date.now();c._replaced=true;try{c.close()}catch{}this.conn=null;setStatus();renderJoinBar();toast('💔 Lost the connection — getting you back in…');this.afterDrop()},
   afterDrop(){if(this.role==='guest'){this.tries=0;this.scheduleRetry(1200)}else this.hostEnsure()},
   /* ---- signaling servers: YOUR relay first, then the free public PeerJS cloud (host is on all of them) ---- */

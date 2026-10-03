@@ -54,3 +54,13 @@ try{if(me.name&&Net.resume()){showHub();setStatus();toast('🔄 Getting you back
 
 /* warn people using an in-app browser (WhatsApp/Instagram/Facebook…): they reload pages and clear data a lot */
 try{if(/FBAN|FBAV|Instagram|WhatsApp|Line\/|Snapchat|MicroMessenger|GSA\//i.test(navigator.userAgent))document.getElementById("iabTip").classList.remove("hidden")}catch{}
+
+/* ---------- keep the phone awake while you're together ----------
+   A phone that auto-locks pauses the page and the connection drops. While you're connected (and the page is open) ask the phone to keep the screen on. */
+let _wl=null;
+async function keepAwake(){try{if(!('wakeLock' in navigator))return;
+  if(Net.connected&&document.visibilityState==='visible'&&!_wl){_wl=await navigator.wakeLock.request('screen');dlog('screen kept awake');_wl.addEventListener('release',()=>{_wl=null})}
+  else if(!Net.connected&&_wl){await _wl.release();_wl=null}}catch(e){_wl=null}}
+{const _ocW=onConnected;onConnected=function(){_ocW();keepAwake()}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')keepAwake()});
+setInterval(keepAwake,15000);
