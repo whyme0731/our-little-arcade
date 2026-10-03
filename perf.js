@@ -51,3 +51,6 @@ document.querySelector('.pill').onclick=openDiag;document.querySelector('.pill')
 
 /* ---------- back into the room after a reload ---------- */
 try{if(me.name&&Net.resume()){showHub();setStatus();toast('🔄 Getting you back into your room…')}}catch(e){console.error(e)}
+
+/* warn people using an in-app browser (WhatsApp/Instagram/Facebook…): they reload pages and clear data a lot */
+try{if(/FBAN|FBAV|Instagram|WhatsApp|Line\/|Snapchat|MicroMessenger|GSA\//i.test(navigator.userAgent))document.getElementById("iabTip").classList.remove("hidden")}catch{}
