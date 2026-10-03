@@ -252,10 +252,13 @@ const BADGES=[
   {id:'garden3',e:'🧟',t:'Zombie Squad',d:'Win Love Garden 3 times',f:()=>stats('garden')>=3},
   {id:'trivia',e:'🧠',t:'Big Brains',d:'Win Couple Trivia',f:()=>stats('trivia')>=1},
   {id:'racer',e:'🏁',t:'Speed Racers',d:'Finish Flappy, 2048 and Snake',f:()=>stats('flappy')&&stats('g2048')&&stats('snake')}];
-function checkBadges(){const u=LS.get('lg_badges',[]);let fresh=null;BADGES.forEach(b=>{if(!u.includes(b.id)&&b.f()){u.push(b.id);fresh=b}});
-  if(fresh){LS.set('lg_badges',u);Net.send('bd',u);toast(`🏆 New badge: ${fresh.e} ${fresh.t}!`);sfx.win();confetti(70)}}
+/* the check itself is cheap now, but it must never run on every tap: at most once per 2 seconds */
+let _cbT=0;
+function checkBadges(){if(_cbT)return;_cbT=setTimeout(()=>{_cbT=0;runBadges()},2000)}
+function runBadges(){const u=LS.get('lg_badges',[]);let fresh=null;BADGES.forEach(b=>{if(!u.includes(b.id)&&b.f()){u.push(b.id);fresh=b}});
+  if(fresh){LS.set('lg_badges',u);Net.send('bd',u);toast(`🏆 New badge: ${fresh.e} ${fresh.t}!`);sfx.win();confetti(40)}}
 Games.trophy={title:'Trophy Room 🏆',
-  start(el){checkBadges();const u=LS.get('lg_badges',[]);
+  start(el){runBadges();const u=LS.get('lg_badges',[]);
     el.innerHTML=`<div class="center"><h3>${u.length} / ${BADGES.length} badges</h3><div class="progress" style="margin:8px 0 16px"><i style="width:${u.length/BADGES.length*100}%"></i></div></div>
       <div class="badges">${BADGES.map(b=>`<div class="badge ${u.includes(b.id)?'':'lock'}"><b>${u.includes(b.id)?b.e:'🔒'}</b>${esc(b.t)}<small>${esc(b.d)}</small></div>`).join('')}</div>`},
   stop(){}};

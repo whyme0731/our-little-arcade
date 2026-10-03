@@ -38,10 +38,15 @@ function showBar(){$('#callbar').classList.remove('hidden');layout();setPad()}
 function hideBar(){$('#callbar').classList.add('hidden');setPad()}
 
 /* ---------- media ---------- */
+/* small, light video: it's shown in a little tile, and a phone encoding a big picture while also running the games is what makes everything stutter */
+const VIDEO_C={facingMode:'user',width:{ideal:320},height:{ideal:240},frameRate:{ideal:15,max:24}};
 async function getLocal(){if(VC.local)return VC.local;
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){toast('📹 Video calls need the secure https:// link (your hosted site) — not a local file');throw new Error('nomedia')}
-  try{VC.local=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480}},audio:{echoCancellation:true,noiseSuppression:true}})}
-  catch(e){try{VC.local=await navigator.mediaDevices.getUserMedia({audio:true});VC.cam=false;toast('No camera found — voice only 🎤')}catch(e2){toast('Couldn\'t use the camera/microphone — check the permission in your browser 🔒');throw e2}}
+  try{VC.local=await navigator.mediaDevices.getUserMedia({video:VIDEO_C,audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}})}
+  catch(e){dlog('camera error: '+e.name);
+    if(e.name==='NotAllowedError'||e.name==='SecurityError'){toast('🔒 Camera/mic is blocked. Tap the lock or camera icon next to the web address, allow Camera and Microphone, then try again.');throw e}
+    try{VC.local=await navigator.mediaDevices.getUserMedia({audio:true});VC.cam=false;toast(e.name==='NotReadableError'?'📷 Another app is using your camera — close it and call again. Voice only for now 🎤':'No camera found — voice only 🎤')}
+    catch(e2){dlog('mic error: '+e2.name);toast('Couldn\'t use the microphone either — check the permission in your browser 🔒');throw e2}}
   VC.mic=true;VC.cam=VC.local.getVideoTracks().length>0;$('#vc-l').srcObject=VC.local;return VC.local}
 function releaseLocal(){if(VC.local){VC.local.getTracks().forEach(t=>t.stop());VC.local=null}$('#vc-l').srcObject=null}
 function toggle(w){if(!VC.local)return;if(w==='mic'){VC.mic=!VC.mic;VC.local.getAudioTracks().forEach(t=>t.enabled=VC.mic)}else{VC.cam=!VC.cam;VC.local.getVideoTracks().forEach(t=>t.enabled=VC.cam)}
@@ -60,19 +65,22 @@ function startRinging(){clearInterval(VC.ringIv);let n=0;VC.ringIv=setInterval((
    2. callee: taps Answer, camera on, places the media call to the caller
    3. caller: auto-answers with their stream  → both see each other            */
 async function startCall(){if(!Net.connected){toast('Connect with your love first, then tap 📹 💞');return}if(VC.state!=='idle')return;
+  Net.ensureTurn();      // start fetching the relay credentials now, while the camera starts
   try{await getLocal()}catch{return}
   VC.state='calling';VC.peerId=Net.conn&&Net.conn.peer;$('#vc-wait').style.display='';$('#vc-name').textContent=Net.partner;showBar();uiState();
   Net.send('vc-ring',{name:me.name});ringUI(`Calling ${Net.partner}… 📞`,false);$('#cr-no').style.display='';$('#cr-no').textContent='Cancel';
   clearTimeout(VC.ringT);VC.ringT=setTimeout(()=>{if(VC.state==='calling'){toast(`${Net.partner} didn't pick up 😢`);endCall(false)}},45000)}
 async function acceptCall(){closeRing();try{await getLocal()}catch{Net.send('vc-no');VC.state='idle';return}
   VC.state='connecting';VC.peerId=Net.conn&&Net.conn.peer;$('#vc-wait').style.display='';$('#vc-name').textContent=Net.partner;showBar();uiState();
-  Net.send('vc-ok');useIce();const call=Net.peer.call(VC.peerId,VC.local);wire(call)}
+  Net.send('vc-ok');
+  if(!Net.hasTurn&&CFG.relay){toast('⏳ Getting the video helper ready…');await Net.ensureTurn(40000);if(VC.state!=='connecting')return}   // the relay is what makes video work between two Wi-Fi networks
+  useIce();const call=Net.peer.call(VC.peerId,VC.local);wire(call)}
 /* give the media connection the freshest STUN/TURN list (TURN = relay for strict networks) */
 function useIce(){try{Net.peer.options.config=Object.assign({},Net.peer.options.config||{},{iceServers:Net.ice})}catch{}}
 function netHelp(){return Net.hasTurn?'The video still couldn\'t connect. Try switching one of you to mobile data. 📶':'Your networks are blocking direct video. Try mobile data on one side — or set up the relay service so this works everywhere (see README). 📶'}
-function wire(call){VC.call=call;clearTimeout(VC.connT);VC.connT=setTimeout(()=>{if(VC.call===call&&VC.state!=='live'){toast('📹 '+netHelp());endCall(false)}},25000);
+function wire(call){VC.call=call;clearTimeout(VC.connT);VC.connT=setTimeout(()=>{if(VC.call===call&&VC.state!=='live'){dlog('video did not connect');toast('📹 '+netHelp());endCall(false)}},40000);
   setTimeout(()=>{try{const pc=call.peerConnection;if(pc)pc.addEventListener('iceconnectionstatechange',()=>{if(VC.call===call&&pc.iceConnectionState==='failed'){toast('📹 '+netHelp());endCall(false)}})}catch{}},400);
-  call.on('stream',rs=>{clearTimeout(VC.connT);VC.remote=rs;const v=$('#vc-r');v.srcObject=rs;v.play&&v.play().catch(()=>{});$('#vc-wait').style.display='none';VC.state='live';closeRing();$('#cr-no').textContent='Decline';
+  call.on('stream',rs=>{clearTimeout(VC.connT);VC.remote=rs;const v=$('#vc-r');v.srcObject=rs;const pr=v.play&&v.play();if(pr&&pr.catch)pr.catch(()=>{v.muted=true;v.play().catch(()=>{});toast('🔈 Tap their video to turn the sound on');v.onclick=()=>{v.muted=false;v.play().catch(()=>{});v.onclick=null}});capVideo(call);$('#vc-wait').style.display='none';VC.state='live';closeRing();$('#cr-no').textContent='Decline';
     showBar();uiState();Net.send('vc-state',{mic:VC.mic,cam:VC.cam});sfx.love();toast(`📹 You can see ${Net.partner}! 💞`)});
   /* a late 'close' from an OLD call must never end a newer one */
   call.on('close',()=>{if(VC.call===call)endCall(true)});call.on('error',()=>{if(VC.call===call)endCall(true)})}
@@ -95,5 +103,14 @@ Net.on('vc-state',d=>{VC.rmic=!!(d&&d.mic);VC.rcam=!!(d&&d.cam);uiState()});
 function attachCallHandler(){const p=Net.peer;if(!p||p._vcAttached)return;p._vcAttached=true;
   p.on('call',call=>{if((VC.state==='calling'||VC.state==='connecting')&&VC.local){useIce();call.answer(VC.local);wire(call)}else{try{call.close()}catch{}}})}
 {const _oc6=onConnected;onConnected=function(){_oc6();attachCallHandler()}}
-{const _ss=setStatus;setStatus=function(){_ss();if(!Net.connected&&VC.state!=='idle')endCall(true)}}
+/* (a brief drop of the game link no longer hangs up the call — the video travels on its own connection) */
 addEventListener('beforeunload',()=>{if(VC.state!=='idle')try{Net.send('vc-end')}catch{}});
+
+/* cap the video's bitrate so it can't flood a phone's connection or CPU */
+function capVideo(call){try{const pc=call.peerConnection;pc&&pc.getSenders().forEach(sd=>{if(sd.track&&sd.track.kind==='video'){const p=sd.getParameters();p.encodings=p.encodings&&p.encodings.length?p.encodings:[{}];p.encodings[0].maxBitrate=280000;p.encodings[0].maxFramerate=20;sd.setParameters(p).catch(()=>{})}})}catch{}}
+/* if the phone paused the camera while the page was in the background, switch it back on */
+async function fixCamera(){if(VC.state==='idle'||!VC.local)return;const vt=VC.local.getVideoTracks()[0];if(!vt||vt.readyState==='live')return;
+  try{const st=await navigator.mediaDevices.getUserMedia({video:VIDEO_C}),nt=st.getVideoTracks()[0];VC.local.removeTrack(vt);VC.local.addTrack(nt);
+    const pc=VC.call&&VC.call.peerConnection,sd=pc&&pc.getSenders().find(x=>x.track&&x.track.kind==='video');if(sd)await sd.replaceTrack(nt);
+    $('#vc-l').srcObject=VC.local;VC.cam=true;Net.send('vc-state',{mic:VC.mic,cam:VC.cam});uiState();dlog('camera restarted');toast('📷 Camera is back')}catch(e){dlog('camera restart failed: '+e.name)}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(fixCamera,600)});

@@ -1,5 +1,5 @@
 /* ===== VIDEO CALL: docked to the top, pushes the page down (never covers games) ===== */
-#callbar{position:fixed;top:0;left:0;right:0;z-index:55;background:linear-gradient(135deg,#3a2150f2,#4a2c5af2);backdrop-filter:blur(6px);padding:6px 8px 6px;box-shadow:0 6px 18px #0005;display:flex;flex-direction:column;align-items:center;gap:5px;--vh:96px}
+#callbar{position:fixed;top:0;left:0;right:0;z-index:55;background:linear-gradient(135deg,#3a2150f2,#4a2c5af2);padding:6px 8px 6px;box-shadow:0 6px 18px #0005;display:flex;flex-direction:column;align-items:center;gap:5px;--vh:96px}
 #callbar[data-size="0"]{--vh:64px}#callbar[data-size="2"]{--vh:150px}
 @media(min-width:700px){#callbar{--vh:130px}#callbar[data-size="0"]{--vh:84px}#callbar[data-size="2"]{--vh:190px}}
 .cb-tiles{display:flex;gap:8px;justify-content:center;width:100%}
@@ -151,3 +151,12 @@ body.incall #toast{top:calc(var(--callh,0px) + 10px)}
 .lvbtn.lock{opacity:.45}
 .gd-desc{min-height:20px}
 .gd-msg{text-align:center;font-weight:600;min-height:24px}
+
+/* ===== reconnect banner ===== */
+.netbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:#fff3c4;border:3px solid #ffd766;color:#4a2c5a;border-radius:18px;padding:8px 14px;margin:12px 0 0;font-weight:500;font-size:15px}
+.netbar>span:first-child{min-width:0;overflow-wrap:anywhere}
+#diagov{position:fixed;inset:0;z-index:70;background:#4a2c5acc;display:flex;align-items:center;justify-content:center;padding:14px}
+#diagov .card{background:#fff;border-radius:24px;padding:18px;max-width:520px;width:100%;max-height:88vh;overflow:auto;box-shadow:0 20px 50px #0006}
+#diagov pre{background:#f6f0ff;border-radius:12px;padding:10px;font-size:11px;line-height:1.35;white-space:pre-wrap;overflow-wrap:anywhere;max-height:34vh;overflow:auto;margin:8px 0}
+#diagov .kv{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;font-size:14px}
+#diagov .kv b{opacity:.7;font-weight:500}

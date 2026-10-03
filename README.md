@@ -1,9 +1,9 @@
 # Our Little Arcade 💕
 
-A private game website for two. It's a static site (no server of its own) — 8 files that must stay together:
+A private game website for two. It's a static site (no server of its own) — 9 files that must stay together:
 
 ```
-index.html  config.js  extras.js  garden.js  lovegarden.js  sync.js  videocall.js  extras.css
+index.html  config.js  extras.js  garden.js  lovegarden.js  sync.js  videocall.js  perf.js  extras.css
 ```
 (`serve.js` is only for testing on your own computer: `node serve.js` → http://localhost:5190)
 
@@ -52,3 +52,9 @@ Progress lives on **both** devices and merges every time you connect, so it does
 - **Talk:** Deep Talk (72 questions + your own "Just Us"), Guess My Pick, quiz, would you rather, never have I ever, two truths & a lie, truth or dare, love jar, scratch card, fortune cookie
 - **Play:** Love Garden (12 levels + endless, 12 plants), Flappy Cupid, 2048, Snake, Quick Draw, Reversi, Couple Trivia, Draw & Guess, Tic-Tac-Toe, Connect 4, Memory, Battleship, Rock Paper Scissors, Hangman, Heart Catcher
 - **Together:** shared lists, memory wall, love letters, together timer, Mochi the pet, drawing, heartbeat sync, date spinner, trophy room
+
+## If something goes wrong
+- **Tap the "Playing with…" pill** at the top: it shows what the connection is doing, has a **🧪 Test video on this network** button, and a **Copy log** button — paste that log to me if anything misbehaves.
+- **Reload or phone sleep is safe**: the app remembers your room and puts you straight back in. A yellow banner with **Retry now** appears while it reconnects. Use **Leave room** to start a different room.
+- **⚡ button** (top): Smoother mode. Auto switches off decorations if your phone struggles; 🪶 forces it on, ✨ forces all the sparkle.
+- Video uses a Cloudflare relay (via your Render relay) so it works Wi-Fi to Wi-Fi. The first load after the relay has been idle can take up to a minute; after that the credentials are cached for 20 hours.

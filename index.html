@@ -17,8 +17,9 @@
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;min-height:100%;font-family:'Fredoka',system-ui,sans-serif;color:var(--ink);scroll-behavior:smooth}
-body{background:linear-gradient(160deg,var(--bg1),var(--bg2),#ffe9f5);background-size:200% 200%;animation:bgShift 18s ease infinite;background-attachment:fixed;overflow-x:hidden}
-@keyframes bgShift{50%{background-position:100% 100%}}
+/* static background on its own fixed layer: no repainting while you scroll or play */
+body{background:var(--bg1);overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;z-index:-1;background:linear-gradient(160deg,var(--bg1),var(--bg2),#ffe9f5);pointer-events:none}
 button{font-family:inherit;cursor:pointer;border:0;color:inherit;touch-action:manipulation}
 button:disabled{cursor:not-allowed}
 h1,h2,h3{margin:.2em 0}
@@ -27,6 +28,12 @@ h1,h2,h3{margin:.2em 0}
 
 #bg{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
 #bg span{position:absolute;bottom:-40px;animation:floatUp linear infinite;opacity:.5;will-change:transform}
+/* decorations stop while you're playing a game (frees the phone's GPU) and in Lite mode */
+body.ingame #bg,body.lite #bg{display:none}
+body.lite .spark,body.lite .float{display:none}
+body.lite *{backdrop-filter:none!important;box-shadow:none!important;text-shadow:none!important}
+body.lite .btn,body.lite .panel,body.lite .game{box-shadow:0 2px 0 #0000001a!important}
+body.lite .bounce,body.lite .big-heart,body.lite .dot.on,body.lite .stagger>*,body.lite .view-in{animation:none!important}
 @keyframes floatUp{to{transform:translateY(-115vh) rotate(40deg)}}
 
 .wrap{position:relative;z-index:1;max-width:1000px;margin:0 auto;padding:16px;padding-bottom:110px}
@@ -50,7 +57,7 @@ header{display:flex;align-items:center;justify-content:space-between;gap:10px;fl
 .btn:disabled{opacity:.5;filter:grayscale(.4)}
 input,textarea,select{font-family:inherit;font-size:16px;padding:10px 14px;border-radius:14px;border:3px solid #fff;background:#fffc;color:var(--ink);width:100%;outline:none;transition:border-color .2s,box-shadow .2s}
 input:focus,textarea:focus{border-color:var(--pink2);box-shadow:0 0 0 4px #ff9ec455}
-.panel{background:var(--card);backdrop-filter:blur(6px);border-radius:26px;padding:22px;box-shadow:var(--shadow);margin:16px 0}
+.panel{background:#ffffffd9;border-radius:26px;padding:22px;box-shadow:var(--shadow);margin:16px 0}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .center{text-align:center}
 .note{font-size:14px;opacity:.75}
@@ -77,8 +84,8 @@ input:focus,textarea:focus{border-color:var(--pink2);box-shadow:0 0 0 4px #ff9ec
 .game{background:#fff;border-radius:24px;padding:18px;text-align:center;box-shadow:var(--shadow);transition:transform .25s var(--ease);position:relative;overflow:hidden;cursor:pointer;user-select:none}
 .game:hover{transform:translateY(-6px) rotate(-1.5deg)}
 .game:active{transform:scale(.96)}
-.game .emoji{font-size:50px;display:block;animation:bounce 3s infinite}
-.game:nth-child(2n) .emoji{animation-delay:.6s}.game:nth-child(3n) .emoji{animation-delay:1.1s}
+.game .emoji{font-size:50px;display:block}
+.game:hover .emoji{animation:bounce .7s}
 .game h3{font-size:19px}
 .game p{margin:4px 0 0;font-size:14px;opacity:.75}
 .tag{position:absolute;top:10px;right:10px;background:var(--yellow);border-radius:99px;font-size:11px;padding:2px 9px;font-weight:600}
@@ -321,9 +328,12 @@ header{row-gap:8px}
     <div class="row">
       <span class="pill"><span class="dot" id="dot"></span><span id="statusTxt">Not connected</span></span>
       <button class="iconbtn" id="themeBtn" title="Change theme">🎨</button>
+      <button class="iconbtn" id="liteBtn" title="Smoother mode">⚡</button>
       <button class="iconbtn" id="muteBtn" title="Sound">🔊</button>
     </div>
   </header>
+
+  <div id="netBar" class="hidden"></div>
 
   <!-- CONNECT -->
   <section id="connect" class="panel center view-in">
@@ -457,24 +467,31 @@ header{row-gap:8px}
 /* ============ helpers ============ */
 const $=(s,r=document)=>r.querySelector(s);
 const $$=(s,r=document)=>[...r.querySelectorAll(s)];
-const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch{return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}};
+/* Big saved values (photo wall, letters, scrapbook…) are parsed once and kept in memory, not re-parsed on every tap. */
+const _lsBig=new Map();
+const LS={get(k,d){try{if(_lsBig.has(k))return _lsBig.get(k);const v=localStorage.getItem(k);if(!v)return d;const o=JSON.parse(v);if(v.length>6000)_lsBig.set(k,o);return o}catch{return d}},
+  set(k,v){try{const s=JSON.stringify(v);localStorage.setItem(k,s);if(s.length>6000)_lsBig.set(k,v);else _lsBig.delete(k)}catch{_lsBig.delete(k)}}};
+addEventListener('storage',e=>{if(e.key)_lsBig.delete(e.key);else _lsBig.clear()});
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const show=el=>{el.classList.remove('hidden');el.classList.remove('view-in');void el.offsetWidth;el.classList.add('view-in')};
 const hide=el=>el.classList.add('hidden');
 
 (()=>{const bg=$('#bg'),em=['💗','💖','💕','✨','🌸','💜','🫧','⭐'];
-for(let i=0;i<20;i++){const s=document.createElement('span');s.textContent=em[i%em.length];
+for(let i=0;i<9;i++){const s=document.createElement('span');s.textContent=em[i%em.length];
 s.style.left=Math.random()*100+'%';s.style.fontSize=(14+Math.random()*26)+'px';
 s.style.animationDuration=(14+Math.random()*16)+'s';s.style.animationDelay=(-Math.random()*20)+'s';bg.appendChild(s)}})();
 
 /* sound */
 let muted=LS.get('lg_mute',false);
 const AC=window.AudioContext||window.webkitAudioContext;let ac;
+let _oscN=0,_lastBeep=0;
 function beep(freq=600,dur=.12,type='sine',vol=.15,when=0){
-  if(muted)return;try{ac=ac||new AC();if(ac.state==='suspended')ac.resume();const o=ac.createOscillator(),g=ac.createGain();
+  if(muted)return;
+  if(when===0){const n=performance.now();if(n-_lastBeep<40||_oscN>=6)return;_lastBeep=n}   // rapid taps can't pile up dozens of sounds
+  try{ac=ac||new AC();if(ac.state==='suspended')ac.resume();const o=ac.createOscillator(),g=ac.createGain();
   o.type=type;o.frequency.value=freq;g.gain.value=vol;g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+when+dur);
-  o.connect(g);g.connect(ac.destination);o.start(ac.currentTime+when);o.stop(ac.currentTime+when+dur)}catch{}}
+  o.connect(g);g.connect(ac.destination);_oscN++;o.onended=()=>{_oscN=Math.max(0,_oscN-1);try{o.disconnect();g.disconnect()}catch{}};o.start(ac.currentTime+when);o.stop(ac.currentTime+when+dur)}catch{}}
 const sfx={pop:()=>beep(700,.1,'triangle'),tap:()=>beep(440,.08,'sine'),
   win:()=>[523,659,784,1046].forEach((f,i)=>beep(f,.2,'triangle',.18,i*.12)),
   bad:()=>beep(200,.25,'sawtooth',.1),match:()=>{beep(660,.1,'triangle');beep(880,.15,'triangle',.15,.1)},
@@ -490,13 +507,21 @@ function vibe(p=60){try{navigator.vibrate&&navigator.vibrate(p)}catch{}}
 /* confetti */
 const cv=$('#confetti'),cx=cv.getContext('2d');let parts=[],raf;
 function sizeCv(){cv.width=innerWidth;cv.height=innerHeight}sizeCv();addEventListener('resize',sizeCv);
-function confetti(n=90){const em=['💖','✨','🎉','💜','🌸','⭐','💕'];
-  for(let i=0;i<n;i++)parts.push({x:innerWidth/2+(Math.random()-.5)*200,y:innerHeight*.6,vx:(Math.random()-.5)*14,vy:-8-Math.random()*12,r:Math.random()*6,vr:(Math.random()-.5)*.3,e:em[i%em.length],s:16+Math.random()*20});
-  if(!raf)raf=requestAnimationFrame(tick)}
-function tick(){cx.clearRect(0,0,cv.width,cv.height);parts.forEach(p=>{p.vy+=.35;p.x+=p.vx;p.y+=p.vy;p.r+=p.vr;
-  cx.save();cx.translate(p.x,p.y);cx.rotate(p.r);cx.font=p.s+'px serif';cx.fillText(p.e,0,0);cx.restore()});
+/* Emoji are drawn ONCE into small cached pictures, then stamped (about 50x cheaper than redrawing emoji text every frame). */
+const _EMS=new Map();
+function emSprite(e,size){size=Math.max(8,Math.round(size/4)*4);const k=e+size;let s=_EMS.get(k);if(!s){const d=Math.min(2,window.devicePixelRatio||1),w=Math.ceil(size*1.5*d),c=document.createElement('canvas');c.width=c.height=w;
+  const x=c.getContext('2d');x.font=(size*d)+'px serif';x.textAlign='center';x.textBaseline='middle';x.fillText(e,w/2,w/2+size*d*.06);s={c,w:w/d};_EMS.set(k,s)}return s}
+function drawEm(x,e,px,py,size,alpha){const s=emSprite(e,size);if(alpha!==undefined&&alpha<1)x.globalAlpha=alpha;x.drawImage(s.c,px-s.w/2,py-s.w/2,s.w,s.w);if(alpha!==undefined&&alpha<1)x.globalAlpha=1}
+const CONF_MAX=70;
+function confetti(n=90){const em=['💖','✨','🎉','💜','🌸','⭐','💕'],lite=document.body.classList.contains('lite');
+  n=Math.min(n,lite?20:40);n=Math.min(n,CONF_MAX-parts.length);   // never more than a small crowd on screen, however many wins fire at once
+  for(let i=0;i<n;i++)parts.push({x:innerWidth/2+(Math.random()-.5)*200,y:innerHeight*.6,vx:(Math.random()-.5)*14,vy:-8-Math.random()*12,r:Math.random()*6,vr:(Math.random()-.5)*.3,e:em[i%em.length],s:20+Math.floor(Math.random()*3)*8});
+  if(!raf&&parts.length)raf=requestAnimationFrame(tick)}
+function tick(){cx.clearRect(0,0,cv.width,cv.height);
+  for(const p of parts){p.vy+=.35;p.x+=p.vx;p.y+=p.vy;p.r+=p.vr;const s=emSprite(p.e,p.s),c=Math.cos(p.r),n=Math.sin(p.r);cx.setTransform(c,n,-n,c,p.x,p.y);cx.drawImage(s.c,-s.w/2,-s.w/2,s.w,s.w)}
+  cx.setTransform(1,0,0,1,0,0);
   parts=parts.filter(p=>p.y<innerHeight+50);raf=parts.length?requestAnimationFrame(tick):null;if(!raf)cx.clearRect(0,0,cv.width,cv.height)}
-function floatEmoji(e){for(let i=0;i<7;i++){const s=document.createElement('div');s.className='float';s.textContent=e;
+function floatEmoji(e){if(document.querySelectorAll('.float').length>14)return;for(let i=0;i<5;i++){const s=document.createElement('div');s.className='float';s.textContent=e;
   s.style.left=(15+Math.random()*70)+'%';s.style.bottom=(60+Math.random()*30)+'px';s.style.animationDelay=(i*.12)+'s';
   document.body.appendChild(s);setTimeout(()=>s.remove(),2800)}}
 function ringAt(x,y){const r=document.createElement('div');r.className='ring';r.style.left=x+'px';r.style.top=y+'px';document.body.appendChild(r);setTimeout(()=>r.remove(),1000)}
@@ -513,86 +538,171 @@ function renderLove(){const v=loves();let i=0;LEVELS.forEach((l,k)=>{if(v>=l[0])
 
 /* ============ networking (PeerJS / WebRTC) ============ */
 const me={name:LS.get('lg_name',''),nick:LS.get('lg_nick','')};
-const Net={peer:null,conn:null,role:'host',connected:false,handlers:{},partner:'Sweetheart',realName:'',code:null,tries:0,
-  on(t,f){this.handlers[t]=f},
-  send(t,d){if(this.conn&&this.connected)try{this.conn.send({t,d})}catch{}},
-  /* ---- 🔒 ROOM LOCK ----
-     • A connection only counts once BOTH sides have exchanged a valid 'hello' (strangers / bots that don't speak our protocol are dropped after 6s).
-     • Once two people are connected the room is LOCKED: any extra connection is turned away ('busy') and can never kick your partner out.
-     • If the current connection has genuinely dropped (network switch), the room re-opens so your partner can come straight back.
-     • Room codes are 6 characters (~887 million combinations), so they can't be guessed. */
-  alive(){const c=this.conn;if(!this.connected||!c||!c.open)return false;const s=c.peerConnection&&c.peerConnection.iceConnectionState;return!['disconnected','failed','closed'].includes(s)},
-  accept(c,p){   // host side: every incoming connection comes through here
-    if(this.alive()){c.on('open',()=>{try{c.send({t:'busy',d:{}})}catch{}setTimeout(()=>{try{c.close()}catch{}},400)});c.on('error',()=>{});toast('🔒 Someone else tried to join your room — blocked');return}
-    this.peer=p;this.setup(c,true)},
-  setup(c,incoming){
-    if(this.conn&&this.conn!==c){try{this.conn.close()}catch{}}
-    this.conn=c;c._ok=false;
-    c.on('open',()=>{
-      if(incoming){c._hs=setTimeout(()=>{if(!c._ok){try{c.close()}catch{}if(this.conn===c)this.conn=null}},6000)}    // must say hello quickly
-      else this.send0(c,'hello',{name:me.name,v:1})});
-    c.on('data',m=>{if(!m||!m.t)return;
-      if(!c._ok){
-        if(m.t==='busy'&&!incoming){this.conn=null;try{c.close()}catch{}
-          this.tries=(this.tries||0)+1;if(this.tries<8){toast('Room is busy for a moment — retrying…');setTimeout(()=>{if(!this.connected)this.reconnect()},4000)}else{toast('🔒 That room already has two people in it.');this.tries=99}return}
-        if(m.t==='hello'&&m.d&&typeof m.d.name==='string'&&m.d.name.length<=40){c._ok=true;clearTimeout(c._hs);this.connected=true;this.tries=0;
-          if(incoming)this.send0(c,'hello',{name:me.name,v:1});setStatus();onConnected()}
-        else return}
-      if(this.handlers[m.t])try{this.handlers[m.t](m.d)}catch(e){console.error(e)}});
-    c.on('close',()=>{if(this.conn!==c)return;if(!c._ok){this.conn=null;return}
-      this.connected=false;partnerAt=null;setStatus();renderJoinBar();toast('💔 Connection dropped — reconnecting…');
-      if(this.role==='guest'&&this.code&&this.tries<12){this.tries++;setTimeout(()=>{if(!this.connected)this.reconnect()},2000)}});
-    c.on('error',()=>{});
-  },
-  send0(c,t,d){try{c.send({t,d})}catch{}},
-  /* Signaling servers, in order of preference: YOUR relay (if configured in config.js), then the free public PeerJS cloud.
-     The host registers the room on ALL of them; the guest tries them one after another — so a sleeping/offline relay never blocks you. */
-  servers(){const s=[];if(CFG.relay){const[h,p]=String(CFG.relay).split(':');s.push({name:'relay',host:h,port:+p||(CFG.relaySecure?443:80),path:'/peerjs',secure:CFG.relaySecure,key:CFG.peerKey})}s.push({name:'public'});return s},
-  peerOpts(spec){const o={config:{iceServers:this.ice,sdpSemantics:'unified-plan'}};if(spec.host)Object.assign(o,{host:spec.host,port:spec.port,path:spec.path,secure:spec.secure,key:spec.key});return o},
-  host(){const code=Array.from({length:6},()=>'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*31)]).join('');
-    this.role='host';this.code=code;$('#roomCode').textContent=code;
-    this.hostPeers.forEach(p=>{try{p.destroy()}catch{}});this.hostPeers=[];
-    Promise.race([this.iceReady,new Promise(r=>setTimeout(r,4000))]).then(()=>{if(this.code!==code||this.role!=='host')return;
-      this.servers().forEach(spec=>{const p=new Peer('ola-'+code,this.peerOpts(spec));p._spec=spec.name;this.hostPeers.push(p);
-        p.on('connection',c=>this.accept(c,p));
-        p.on('disconnected',()=>{try{p.reconnect()}catch{}});
-        p.on('error',e=>{if(e.type==='unavailable-id'){if(this.code===code)this.host()}
-          else if(spec.name==='public'&&!['disconnected','network','server-error','socket-error','socket-closed'].includes(e.type))toast('Network hiccup: '+e.type)})});
-      this.peer=this.hostPeers[0]})},
-  join(code){this.role='guest';this.code=code.toUpperCase();try{this.peer&&this.peer.destroy()}catch{}
-    const me2=this.code;let i=0,lastErr='';const specs=this.servers();
-    Promise.race([this.iceReady,new Promise(r=>setTimeout(r,4000))]).then(()=>{
-      const attempt=()=>{if(this.code!==me2||this.connected)return;
-        if(i>=specs.length){   // every server tried
-          if(lastErr==='peer-unavailable'){if(this.tries===0)toast('Room not found — check the code 🔍');else setTimeout(()=>{if(!this.connected&&this.tries<12){this.tries++;this.reconnect()}},2500)}
-          else if(lastErr==='timeout')toast('Found the room, but your networks are blocking the direct link 🌐 Try mobile data on one side (or set up the relay — see README).');
-          else toast('Couldn\'t reach the connection server — check your internet 🌐');return}
-        const spec=specs[i++];let moved=false;const p=new Peer(undefined,this.peerOpts(spec));this.peer=p;
-        const next=e=>{if(moved||this.connected)return;moved=true;lastErr=e||lastErr;clearTimeout(t);try{p.destroy()}catch{}attempt()};
-        const t=setTimeout(()=>next('timeout'),spec.name==='relay'?12000:15000);
-        p.on('open',()=>{const c=p.connect('ola-'+me2,{reliable:true});this.setup(c,false)});   // the attempt timer stays armed until the host's hello arrives
-        p.on('error',e=>{if(e.type==='disconnected')return;next(e.type)})};
-      attempt()})},
-  reconnect(){this.join(this.code)}};
 /* ---- connection settings (see config.js) ---- */
 const CFG=Object.assign({relay:'',relaySecure:true,peerKey:'lovearcade'},window.ARCADE_CONFIG||{});
+/* tiny persistent diagnostics log (tap the "Playing with…" pill to see it) */
+const DLOG=(()=>{let a=[];try{a=JSON.parse(localStorage.getItem('lg_dlog')||'[]')}catch{}return{a,add(m){a.push(new Date().toTimeString().slice(0,8)+' '+m);if(a.length>80)a.shift();try{localStorage.setItem('lg_dlog',JSON.stringify(a))}catch{}}}})();
+const dlog=m=>DLOG.add(String(m));
+(()=>{let n='?';try{n=(performance.getEntriesByType('navigation')[0]||{}).type}catch{}dlog('── PAGE LOADED ('+n+') ──')})();
+/* a private id for THIS device: lets the host recognise "you" coming back, while strangers can never take your partner's place */
+try{let s=localStorage.getItem('lg_sid');if(!s){s=Array.from({length:16},()=>'abcdefghjkmnpqrstuvwxyz23456789'[Math.floor(Math.random()*31)]).join('');localStorage.setItem('lg_sid',s)}me.sid=s}catch{me.sid=''}
+
+const Net={peer:null,conn:null,role:'host',connected:false,handlers:{},partner:'Sweetheart',realName:'',code:null,tries:0,
+  partnerSid:'',resuming:false,leaving:false,stopRetry:false,lastRx:0,busyN:0,_jn:0,_idTries:0,
+  on(t,f){this.handlers[t]=f},
+  /* fast-changing "live" messages are dropped (not queued) if the phone's connection is clogged, so taps never pile up into lag */
+  send(t,d){const c=this.conn;if(!c||!this.connected)return;
+    try{const dc=c.dataChannel;if(dc&&dc.bufferedAmount>200000&&(t==='dr'||t==='dg-s'||t==='sc-s'||t==='gd-st'||/-live$/.test(t)||t==='beat'))return;c.send({t,d})}catch{}},
+  /* ---- saved session: a reload / phone sleep / network switch puts you straight back in the same room ---- */
+  sess(){try{return JSON.parse(localStorage.getItem('lg_sess'))}catch{return null}},
+  saveSess(){if(this.code)try{localStorage.setItem('lg_sess',JSON.stringify({role:this.role,code:this.code,t:Date.now(),psid:this.partnerSid}))}catch{}},
+  clearSess(){try{localStorage.removeItem('lg_sess')}catch{}},
+  /* ---- 🔒 ROOM LOCK ----
+     • A connection only counts after a valid 'hello'. Strangers who don't speak our protocol are dropped after 6s.
+     • The first device to complete the handshake becomes "your partner" (identified by a private device id).
+       Nobody else can ever take its place or kick it out — but the SAME device can always come straight back.
+     • Room codes are 6 characters (~887 million combinations). */
+  alive(){const c=this.conn;if(!this.connected||!c||!c.open)return false;const s=c.peerConnection&&c.peerConnection.iceConnectionState;return!['disconnected','failed','closed'].includes(s)},
+  accept(c,p){c._p=p;this.setup(c,true)},
+  admit(c,d,p){const sid=String(d.sid||'').slice(0,40);
+    const ok=this.partnerSid?sid===this.partnerSid:!(this.alive()&&this.conn!==c);
+    if(!ok){this.send0(c,'busy',{});setTimeout(()=>{try{c.close()}catch{}},500);clearTimeout(c._hs);toast('🔒 Someone else tried to join your room — blocked');dlog('blocked an unknown device');return false}
+    if(!this.partnerSid&&sid)this.partnerSid=sid;
+    const old=this.conn;this.conn=c;this.peer=p;if(old&&old!==c){old._replaced=true;try{old.close()}catch{}}
+    return true},
+  setup(c,incoming){
+    if(!incoming){if(this.conn&&this.conn!==c){this.conn._replaced=true;try{this.conn.close()}catch{}}this.conn=c}
+    c._ok=false;
+    c.on('open',()=>{
+      if(incoming)c._hs=setTimeout(()=>{if(!c._ok){try{c.close()}catch{}}},6000);     // must say hello quickly
+      else this.send0(c,'hello',{name:me.name,v:2,sid:me.sid})});
+    c.on('data',m=>{if(!m||!m.t)return;this.lastRx=Date.now();
+      if(!c._ok){
+        if(m.t==='busy'&&!incoming){clearTimeout(c._t);if(this.conn===c)this.conn=null;try{c.close()}catch{}
+          this.busyN++;if(this.busyN>=6){toast('🔒 That room already has two people in it.');this.stopRetry=true;this.clearSess();setStatus()}else this.scheduleRetry(4000);return}
+        if(m.t!=='hello'||!m.d||typeof m.d.name!=='string'||m.d.name.length>40)return;
+        if(incoming&&!this.admit(c,m.d,c._p||this.peer))return;
+        c._ok=true;clearTimeout(c._hs);clearTimeout(c._t);this.connected=true;this.tries=0;this.busyN=0;this.resuming=false;this.stopRetry=false;this.lastRx=Date.now();
+        if(incoming)this.send0(c,'hello',{name:me.name,v:2,sid:me.sid});
+        this.saveSess();dlog('CONNECTED as '+this.role+' (room '+this.code+')');setStatus();onConnected()}
+      if(this.handlers[m.t])try{this.handlers[m.t](m.d)}catch(e){console.error(e)}});
+    c.on('close',()=>{if(c._replaced||this.conn!==c)return;if(!c._ok){this.conn=null;return}
+      this.connected=false;partnerAt=null;dlog('connection dropped');setStatus();renderJoinBar();toast('💔 Connection dropped — getting you back in…');this.afterDrop()});
+    c.on('error',e=>dlog('data error '+(e&&e.type||e)));
+  },
+  send0(c,t,d){try{c.send({t,d})}catch{}},
+  /* the connection died without a clean close (phone slept, network switched) */
+  deadLink(){const c=this.conn;if(!c||!this.connected)return;dlog('no signal from partner → treating link as dead');this.connected=false;partnerAt=null;try{c.close()}catch{}this.conn=null;setStatus();renderJoinBar();toast('💔 Lost the connection — getting you back in…');this.afterDrop()},
+  afterDrop(){if(this.role==='guest'){this.tries=0;this.scheduleRetry(1200)}else this.hostEnsure()},
+  /* ---- signaling servers: YOUR relay first, then the free public PeerJS cloud (host is on all of them) ---- */
+  servers(){const s=[];if(CFG.relay){const[h,p]=String(CFG.relay).split(':');s.push({name:'relay',host:h,port:+p||(CFG.relaySecure?443:80),path:'/peerjs',secure:CFG.relaySecure,key:CFG.peerKey})}s.push({name:'public'});return s},
+  peerOpts(spec){const o={config:{iceServers:this.ice,sdpSemantics:'unified-plan',iceCandidatePoolSize:2}};if(spec.host)Object.assign(o,{host:spec.host,port:spec.port,path:spec.path,secure:spec.secure,key:spec.key});return o},
+  /* wait for relay credentials — long enough for a sleeping free relay to wake up the very first time, instant afterwards (cached) */
+  waitIce(){const quick=this.hasTurn||!CFG.relay;let tm;const slow=new Promise(r=>{tm=setTimeout(r,quick?1500:15000)});if(!quick)setTimeout(()=>{if(!this.hasTurn)toast('⏳ Waking up the connection helper… (first time only)')},2500);
+    return Promise.race([this.iceReady,slow]).then(()=>clearTimeout(tm))},
+  host(code,resume){const c=code||Array.from({length:6},()=>'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*31)]).join('');
+    this.role='host';this.code=c;this.leaving=false;this.stopRetry=false;this.resuming=!!resume;this._idTries=0;$('#roomCode').textContent=c;
+    this.hostPeers.forEach(p=>{try{p.destroy()}catch{}});this.hostPeers=[];dlog('hosting room '+c+(resume?' (resumed)':''));
+    this.waitIce().then(()=>{if(this.code===c&&this.role==='host'&&!this.leaving)this.hostOn(c)})},
+  hostOn(code){this.servers().forEach(spec=>{let p=this.hostPeers.find(x=>x._spec===spec.name);
+      if(p&&!p.destroyed){if(p.disconnected)try{p.reconnect()}catch{}return}
+      this.hostPeers=this.hostPeers.filter(x=>x!==p);
+      p=new Peer('ola-'+code,this.peerOpts(spec));p._spec=spec.name;this.hostPeers.push(p);
+      p.on('connection',c=>this.accept(c,p));
+      p.on('disconnected',()=>{if(!p.destroyed)setTimeout(()=>{try{p.reconnect()}catch{}},1500)});
+      p.on('close',()=>{if(!this.leaving&&this.role==='host'&&this.code===code)setTimeout(()=>{if(!this.leaving&&this.code===code)this.hostOn(code)},2500)});
+      p.on('error',e=>{if(e.type==='disconnected')return;dlog('host['+spec.name+'] '+e.type);
+        if(e.type==='unavailable-id'){
+          if(this.resuming){if(++this._idTries>30){this.resuming=false;this.clearSess();this.partnerSid='';toast('Couldn\'t take your old room back — made a fresh one 🆕');this.host()}}   // old registration is still expiring: keep retrying
+          else if(this.code===code)this.host();return}
+        if(spec.name==='public'&&!['network','server-error','socket-error','socket-closed'].includes(e.type))toast('Network hiccup: '+e.type)})});
+    this.peer=this.hostPeers[0]||this.peer},
+  hostEnsure(){if(this.role==='host'&&this.code&&!this.leaving)this.hostOn(this.code)},
+  join(code,auto){this.role='guest';this.code=code.toUpperCase();this.leaving=false;this.stopRetry=false;if(!auto)this.resuming=false;clearTimeout(this._rt);
+    const tok=++this._jn;try{this.peer&&this.peer.destroy()}catch{}
+    const room=this.code;let i=0,lastErr='';const specs=this.servers();
+    this.waitIce().then(()=>{
+      const attempt=()=>{if(this._jn!==tok||this.connected)return;
+        if(i>=specs.length){   // every server tried
+          if(!auto){   // the first attempt with a typed code: tell them why
+            if(lastErr==='peer-unavailable')toast('Room not found — check the code 🔍');
+            else if(lastErr==='timeout')toast('Found the room, but couldn\'t get through. Trying again in the background…');
+            else toast('Couldn\'t reach the connection server — check your internet 🌐');
+            if(lastErr==='peer-unavailable')return}
+          this.scheduleRetry();return}
+        const spec=specs[i++];let moved=false;const p=new Peer(undefined,this.peerOpts(spec));this.peer=p;
+        const next=e=>{if(moved||this.connected||this._jn!==tok)return;moved=true;lastErr=e||lastErr;clearTimeout(t);dlog('join via '+spec.name+' failed: '+e);try{p.destroy()}catch{}attempt()};
+        const t=setTimeout(()=>next('timeout'),spec.name==='relay'?8000:16000);   // a relay that still holds a stale registration answers nothing: don't wait long
+        p.on('open',()=>{const c=p.connect('ola-'+room,{reliable:true});c._t=t;this.setup(c,false)});
+        p.on('error',e=>{if(e.type==='disconnected')return;next(e.type)})};
+      attempt()})},
+  reconnect(){if(this.code)this.join(this.code,true)},
+  /* keep trying (gently, forever) until the room is back — pausing while the page is hidden */
+  scheduleRetry(ms){if(this.role!=='guest'||!this.code||this.connected||this.stopRetry)return;clearTimeout(this._rt);
+    const d=ms!=null?ms:Math.min(10000,1500*Math.pow(1.5,Math.min(this.tries,8)));this.tries++;setStatus();
+    this._rt=setTimeout(()=>{if(this.connected||this.role!=='guest'||this.stopRetry)return;if(document.visibilityState==='hidden')return;this.reconnect()},d)},
+  /* nudge: page came back to the foreground / network came back / user tapped Retry */
+  kick(){if(this.connected||this.leaving)return;this.stopRetry=false;
+    if(this.role==='guest'&&this.code&&this.sess()){clearTimeout(this._rt);this.tries=0;dlog('retrying now');this.reconnect()}
+    else if(this.role==='host'&&this.code)this.hostEnsure()},
+  /* open the app back in the room you were in */
+  resume(){const s=this.sess();if(!s||!s.code||!me.name)return false;if(Date.now()-s.t>6*3600e3){this.clearSess();return false}
+    this.partnerSid=s.psid||'';this.resuming=true;this.role=s.role;this.code=s.code;dlog('resuming '+s.role+' room '+s.code);
+    if(s.role==='host')this.host(s.code,true);else this.join(s.code,true);return true},
+  leave(){this.leaving=true;clearTimeout(this._rt);this.clearSess();this.partnerSid='';this.stopRetry=true;this._jn++;this.resuming=false;
+    try{this.conn&&this.conn.close()}catch{}this.conn=null;this.connected=false;this.hostPeers.forEach(p=>{try{p.destroy()}catch{}});this.hostPeers=[];
+    try{this.peer&&this.peer.destroy()}catch{}this.peer=null;this.code=null;partnerAt=null;dlog('left the room');setStatus()}};
 Net.hostPeers=[];
-Net.ice=[{urls:['stun:stun.l.google.com:19302','stun:stun.cloudflare.com:3478']}];
-Net.hasTurn=false;
-/* Fetch TURN credentials from YOUR relay (this also wakes a sleeping free instance). Never blocks the app. */
+const ICE_STUN=[{urls:['stun:stun.l.google.com:19302','stun:stun.cloudflare.com:3478']}];
+Net.baseIce=ICE_STUN.slice();Net.ice=ICE_STUN.slice();Net.hasTurn=false;
+/* extra relay ports for strict Wi-Fi (school/work/some home routers only allow 443 or 80) */
+function iceAugment(list){return list.map(s=>{if(!s.username||!s.credential)return s;const urls=[].concat(s.urls||[]);
+  if(urls.some(u=>/turn\.cloudflare\.com/.test(u)))['turn:turn.cloudflare.com:80?transport=tcp','turns:turn.cloudflare.com:443?transport=tcp'].forEach(u=>{if(!urls.includes(u))urls.push(u)});
+  return{...s,urls}})}
+Net.setIce=function(servers){this.ice=iceAugment([...this.baseIce,...servers.filter(s=>s.username&&s.credential)]);
+  this.hasTurn=this.ice.some(s=>[].concat(s.urls||[]).some(u=>/^turns?:/.test(u)));
+  [...this.hostPeers,this.peer].forEach(p=>{try{if(p&&!p.destroyed)p.options.config=Object.assign({},p.options.config,{iceServers:this.ice})}catch{}})};
+const _relayBase=()=>(CFG.relaySecure?'https://':'http://')+CFG.relay;
+/* ask YOUR relay for relay-server (TURN) credentials. A sleeping free relay takes up to ~60s to wake, so we wait patiently and cache the result for 20h. */
+Net.fetchIce=async function(ms=70000){if(!CFG.relay)return false;
+  try{const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),ms);const r=await fetch(_relayBase()+'/turn',{signal:ctl.signal,cache:'no-store'});clearTimeout(tm);const j=await r.json();
+    if(j&&Array.isArray(j.iceServers)&&j.iceServers.length){this.setIce(j.iceServers);if(j.turn){try{localStorage.setItem('lg_ice',JSON.stringify({exp:Date.now()+20*36e5,servers:j.iceServers}))}catch{}}dlog('relay credentials: '+(j.turn?'TURN ready':'no TURN (STUN only)'));return!!j.turn}}
+  catch(e){dlog('relay credentials failed: '+(e&&e.name))}return false};
+/* make sure we have TURN, retrying (used before a video call too) */
+Net.ensureTurn=async function(ms=45000){if(this.hasTurn||!CFG.relay)return this.hasTurn;if(!this._ensure)this._ensure=(async()=>{for(let k=0;k<3&&!this.hasTurn;k++){await this.fetchIce(ms);if(!this.hasTurn)await new Promise(r=>setTimeout(r,2000))}this._ensure=null})();await this._ensure;return this.hasTurn};
 Net.iceReady=(async()=>{
-  /* Option A (no server, no card): TURN servers straight from config.js — either a ready list, or a free Metered account */
-  if(Array.isArray(CFG.iceServers)&&CFG.iceServers.length){Net.ice=[...Net.ice,...CFG.iceServers];Net.hasTurn=CFG.iceServers.some(s=>[].concat(s.urls||[]).some(u=>/^turns?:/.test(u)))}
+  /* Option A (no server): TURN servers straight from config.js — a ready list, or a free Metered account */
+  if(Array.isArray(CFG.iceServers)&&CFG.iceServers.length)Net.baseIce=[...Net.baseIce,...CFG.iceServers];
+  Net.setIce([]);
   if(CFG.metered&&CFG.metered.app&&CFG.metered.apiKey){try{const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),8000);
     const r=await fetch(`https://${CFG.metered.app}.metered.live/api/v1/turn/credentials?apiKey=${encodeURIComponent(CFG.metered.apiKey)}`,{signal:ctl.signal});clearTimeout(tm);const a=await r.json();
-    if(Array.isArray(a)&&a.length){Net.ice=[{urls:['stun:stun.l.google.com:19302','stun:stun.cloudflare.com:3478']},...a];Net.hasTurn=a.some(s=>[].concat(s.urls||[]).some(u=>/^turns?:/.test(u)))}}catch{}}
-  /* Option B: your own relay server (see love-arcade-relay) */
-  if(!CFG.relay)return;try{const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),10000);
-  const r=await fetch((CFG.relaySecure?'https://':'http://')+CFG.relay+'/turn',{signal:ctl.signal});clearTimeout(tm);const j=await r.json();
-  if(j&&Array.isArray(j.iceServers)&&j.iceServers.length){Net.ice=j.iceServers;Net.hasTurn=!!j.turn}}catch{}})();
+    if(Array.isArray(a)&&a.length)Net.setIce(a)}catch{}}
+  /* Option B: your own relay (love-arcade-relay). Cached credentials make this instant after the first time. */
+  if(!CFG.relay)return;
+  let cached=null;try{const o=JSON.parse(localStorage.getItem('lg_ice'));if(o&&o.exp>Date.now()+36e5&&Array.isArray(o.servers))cached=o}catch{}
+  if(cached){Net.setIce(cached.servers);dlog('relay credentials from cache');
+    fetch(_relayBase()+'/health',{mode:'no-cors',cache:'no-store'}).catch(()=>{});            // wake the relay up in the background
+    if(cached.exp<Date.now()+10*36e5)Net.fetchIce(70000);return}
+  await Net.ensureTurn()})();
+/* keep the free relay awake while the page is open */
+setInterval(()=>{if(CFG.relay&&document.visibilityState==='visible')fetch(_relayBase()+'/health',{mode:'no-cors',cache:'no-store'}).catch(()=>{})},4*60*1000);
+/* connection watchdog: a ping every 5s; if nothing at all arrives for 25s the link is dead (phone slept / Wi-Fi switched) */
+setInterval(()=>{if(!Net.connected)return;Net.send('ping',1);if(document.visibilityState==='visible'&&Date.now()-Net.lastRx>25000)Net.deadLink();else if(Net.connected)Net.saveSess()},5000);
+Net.on('ping',()=>{});
+/* page returns to the foreground / network returns → get back into the room right away */
+document.addEventListener('visibilitychange',()=>{dlog('page '+document.visibilityState);if(document.visibilityState==='visible'){Net.lastRx=Date.now();if(!Net.connected)Net.kick()}});
+addEventListener('online',()=>{dlog('network online');Net.kick()});addEventListener('offline',()=>dlog('network offline'));
+addEventListener('pageshow',e=>{if(e.persisted){dlog('page restored from cache');Net.kick()}});
 function pn(){return me.nick||Net.realName||'your love'}
 function setStatus(){$('#dot').classList.toggle('on',Net.connected);
-  $('#statusTxt').textContent=Net.connected?('Playing with '+Net.partner+' 🔒'):'Not connected'}
+  $('#statusTxt').textContent=Net.connected?('Playing with '+Net.partner+' 🔒'):(Net.sess()&&!Net.stopRetry?'Reconnecting…':'Not connected');renderNetBar()}
+/* shows whenever you were in a room but the link is down — with a Retry button */
+function renderNetBar(){const b=$('#netBar');if(!b)return;const s=Net.sess();
+  if(!s||Net.connected||Net.stopRetry||Net.leaving){b.classList.add('hidden');b.innerHTML='';return}
+  const who=esc(Net.partner==='Sweetheart'?'your love':Net.partner);
+  b.innerHTML='<div class="netbar"><span>'+(s.role==='host'?'⏳ Waiting for '+who+' to come back… room <b>'+esc(s.code)+'</b>':'🔄 Reconnecting to '+who+'…')+'</span><span class="row"><button class="btn mint small" id="nb-retry">Retry now</button><button class="btn ghost small" id="nb-leave">Leave room</button></span></div>';
+  b.classList.remove('hidden');$('#nb-retry').onclick=()=>{toast('Trying again… 💫');Net.kick()};$('#nb-leave').onclick=leaveRoomUI}
+function leaveRoomUI(){Net.leave();hide($('#hub'));hide($('#stage'));hide($('#hostBox'));hide($('#joinBox'));document.body.classList.remove('ingame');current=null;show($('#connect'));toast('You left the room')}
 
 Net.on('hello',d=>{Net.realName=d.name||'';Net.partner=me.nick||Net.realName||'Sweetheart';setStatus();toast('💞 '+Net.partner+' is here!');sfx.love();confetti(50);vibe([60,40,60]);renderHub()});
 Net.on('react',e=>{floatEmoji(e);sfx.love();vibe(40)});
@@ -608,9 +718,9 @@ let current=null;
 function needName(){const n=$('#nameIn').value.trim();if(!n){toast('Tell me your name first 🌷');$('#nameIn').focus();return false}
   me.name=n;me.nick=$('#nickIn').value.trim();LS.set('lg_name',n);LS.set('lg_nick',me.nick);Net.partner=me.nick||Net.partner;return true}
 $('#nameIn').value=me.name;$('#nickIn').value=me.nick;
-$('#createBtn').onclick=()=>{if(!needName())return;hide($('#joinBox'));show($('#hostBox'));if(!Net.peer)Net.host()};
+$('#createBtn').onclick=()=>{if(!needName())return;hide($('#joinBox'));show($('#hostBox'));if(!Net.hostPeers.length||!Net.code){Net.clearSess();Net.partnerSid='';Net.host()}};
 $('#joinBtn').onclick=()=>{if(!needName())return;hide($('#hostBox'));show($('#joinBox'));$('#codeIn').focus()};
-$('#goBtn').onclick=()=>{const c=$('#codeIn').value.trim();if(c.length<6){toast('The room code has 6 characters');return}Net.tries=0;toast('Connecting… 💫');Net.join(c)};
+$('#goBtn').onclick=()=>{const c=$('#codeIn').value.trim();if(c.length<6){toast('The room code has 6 characters');return}Net.clearSess();Net.partnerSid='';Net.tries=0;toast('Connecting… 💫');Net.join(c,false)};
 $('#codeIn').onkeydown=e=>{if(e.key==='Enter')$('#goBtn').click()};
 $('#soloBtn').onclick=()=>{if(!needName())return;showHub()};
 function showTab(t){if(!$(`.tabpane[data-t="${t}"]`))t='today';LS.set('lg_tab',t);
@@ -618,13 +728,13 @@ function showTab(t){if(!$(`.tabpane[data-t="${t}"]`))t='today';LS.set('lg_tab',t
   const p=$(`.tabpane[data-t="${t}"]`);p.classList.remove('view-in');void p.offsetWidth;p.classList.add('view-in');
   typeof hubTab==='function'&&hubTab(t)}
 $$('#tabs button').forEach(b=>b.onclick=()=>{sfx.tap();showTab(b.dataset.t);window.scrollTo({top:0,behavior:'smooth'})});
-function showHub(){hide($('#connect'));hide($('#stage'));renderHub();renderJoinBar();showTab(LS.get('lg_tab','today'));show($('#hub'));show($('#reactions'));$('#reactions').classList.remove('view-in');current=null;window.scrollTo({top:0})}
+function showHub(){document.body.classList.remove('ingame');hide($('#connect'));hide($('#stage'));renderHub();renderJoinBar();showTab(LS.get('lg_tab','today'));show($('#hub'));show($('#reactions'));$('#reactions').classList.remove('view-in');current=null;window.scrollTo({top:0})}
 const NOTES=["You're my favourite notification. 💌","Every hello with you is my favourite part of the day.","Miles apart, still the same sky, still the same us. 🌙","Missing you is just loving you out loud.","You make ordinary days feel like holidays.","Home isn't a place — it's you.","I'd choose you in every timeline. ✨","Thinking of you is my default setting.","Our love has no distance limit.","You + me = my favourite equation.","You're the reason I check my phone with a smile.","One day we'll laugh about all this distance, together.","You're worth every mile and every minute.","My heart lives in two places, and one is with you. 💗","I'm so proud to be yours.","You're my today and all of my tomorrows.","Somebody is thinking about you right now. It's me. 🥰","Love looks good on us.","Long distance? More like long-lasting. 💞","Your laugh is my favourite sound in the world.","You are my calm and my chaos.","Every day closer to the next hug.","You're the best thing that ever happened to my life.","I love you more than yesterday, less than tomorrow.","Together is my favourite place to be — even on a screen.","You had me at 'hey'. 💘","Be brave, be kind, and know you're deeply loved.","I'm the luckiest, and I know it. 🍀","You're my person. Always.","Sending you a hug through the wifi. 🤗"];
 function renderHub(){
   const n=me.name||'you',day=Math.floor(Date.now()/864e5);
   $('#greet').innerHTML=`Hi ${esc(n)} 💕 ${Net.connected?`<small class="note">with ${esc(Net.partner)}</small>`:''}`;
   $('#daynote').textContent=NOTES[day%NOTES.length];renderLove();renderCd();renderSince()}
-function openGame(g,fromInvite){if(!Games[g]){toast('This one is still loading… try again in a moment 🚧');return}current=g;hide($('#hub'));hide($('#invite'));show($('#stage'));window.scrollTo({top:0});
+function openGame(g,fromInvite){if(!Games[g]){toast('This one is still loading… try again in a moment 🚧');return}current=g;document.body.classList.add('ingame');hide($('#hub'));hide($('#invite'));show($('#stage'));window.scrollTo({top:0});
   const G=Games[g];$('#gameTitle').textContent=G.title;$('#crumb').textContent='';$('#gameBody').innerHTML='';G.start($('#gameBody'));$('#invite').classList.remove('show');
   Net.send('nav',{g})}
 function bindGames(){$$('.game').forEach(el=>el.onclick=()=>{sfx.pop();openGame(el.dataset.g)})}bindGames();
@@ -1257,8 +1367,10 @@ Games.hc={title:'Heart Catcher',
 (()=>{let last=0;const em=['✨','💗','⭐','🌸','💖'];
   const burst=(x,y,n)=>{for(let i=0;i<n;i++){const s=document.createElement('div');s.className='spark';s.textContent=em[Math.floor(Math.random()*em.length)];
     s.style.left=x+'px';s.style.top=y+'px';s.style.setProperty('--dx',(Math.random()-.5)*90+'px');s.style.setProperty('--dy',(Math.random()*-70-10)+'px');document.body.appendChild(s);setTimeout(()=>s.remove(),850)}};
-  addEventListener('pointermove',e=>{if(e.pointerType!=='mouse')return;const n=Date.now();if(n-last<70)return;last=n;burst(e.clientX,e.clientY,1)});
-  addEventListener('pointerdown',e=>{if(e.target.closest&&e.target.closest('#hcarea'))return;burst(e.clientX,e.clientY,5)})})();
+  /* sparkles only for a mouse on the menus: never on phones, never while playing, and never more than a handful at once */
+  const ok=e=>e.pointerType==='mouse'&&!document.body.classList.contains('ingame')&&!document.body.classList.contains('lite')&&document.querySelectorAll('.spark').length<10;
+  addEventListener('pointermove',e=>{if(!ok(e))return;const n=Date.now();if(n-last<90)return;last=n;burst(e.clientX,e.clientY,1)});
+  addEventListener('pointerdown',e=>{if(!ok(e))return;burst(e.clientX,e.clientY,3)})})();
 const THEMES=['candy','sunset','night'];
 function applyTheme(t){document.documentElement.dataset.theme=t;const m=document.querySelector('meta[name=theme-color]');m&&(m.content={candy:'#ffe4f1',sunset:'#ffe3cf',night:'#241a4d'}[t])}
 applyTheme(LS.get('lg_theme','candy'));
@@ -1276,5 +1388,6 @@ setStatus();
 <script src="lovegarden.js"></script>
 <script src="sync.js"></script>
 <script src="videocall.js"></script>
+<script src="perf.js"></script>
 </body>
 </html>

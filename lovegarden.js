@@ -227,16 +227,16 @@ Games.garden={title:'Love Garden 🌻🧟',playing:false,isHost:true,sel:'rose',
     for(let r=0;r<GROWS;r++){x.fillStyle=th[2];x.fillRect(0,r*GCELL,GOFF,GCELL);for(let c=0;c<GCOLS;c++){x.fillStyle=(r+c)%2?th[1]:th[0];x.fillRect(GOFF+c*GCELL,r*GCELL,GCELL,GCELL)}}
     x.textAlign='center';x.textBaseline='middle';
     const px=v=>GOFF+v*GCELL;
-    x.font='34px serif';x.fillText('🏠',GOFF/2,GH/2);
-    s.mo.forEach(m=>{if(m[3]&&!m[2])return;x.font='34px serif';x.fillText('🚜',px(m[1]),m[0]*GCELL+GCELL/2)});
+    drawEm(x,'🏠',GOFF/2,GH/2,34);
+    s.mo.forEach(m=>{if(m[3]&&!m[2])return;drawEm(x,'🚜',px(m[1]),m[0]*GCELL+GCELL/2,34)});
     const bar=(cx,cy,pct,w,col)=>{if(pct>=99)return;x.fillStyle='#0003';x.fillRect(cx-w/2,cy,w,5);x.fillStyle=col;x.fillRect(cx-w/2,cy,w*pct/100,5)};
-    s.pl.forEach(p=>{const k=PKEYS[p[2]],cx=px(p[1]+.5),cy=p[0]*GCELL+GCELL/2;if(k==='mine'&&!p[4]){x.globalAlpha=.45;x.font='30px serif';x.fillText(PL[k].e,cx,cy+8);x.globalAlpha=1}else{x.font='44px serif';x.fillText(PL[k].e,cx,cy)}bar(cx,cy+26,p[3],40,'#5fd3b3')});
-    s.zs.slice().sort((a,b)=>a[1]-b[1]).forEach(z=>{const cx=px(z[2]),cy=z[1]*GCELL+GCELL/2-2,zt=ZB[ZK[z[3]]];x.globalAlpha=zt.ghost?.7:1;x.font=(z[3]>=5?58:46)+'px serif';x.fillText(zt.e,cx,cy);x.globalAlpha=1;
-      if(z[5]&1)x.fillText('🧊',cx+10,cy+16);if(z[5]&2){x.font='22px serif';x.fillText('💤',cx+14,cy-22)}bar(cx,cy-(z[3]>=5?38:32),z[4],z[3]>=5?50:36,'#ff6fa5')});
-    s.sh.forEach(h=>{x.font=(h[2]===2?24:18)+'px serif';x.fillText(h[2]===1?'❄️':h[2]===2?'🌺':'🌸',px(h[1]),h[0]*GCELL+GCELL/2-6)});
-    s.fx.forEach(f=>{x.globalAlpha=Math.max(0,f[2]*2);x.font=(110-f[2]*60)+'px serif';x.fillText(f[3],px(f[0]),f[1]*GCELL);x.globalAlpha=1});
-    s.su.forEach(u=>{x.shadowColor='#ffd766';x.shadowBlur=14;x.font='34px serif';x.fillText('💗',px(u[1]),u[2]*GCELL);x.shadowBlur=0});
-    if(L.th==='night'){x.fillStyle='rgba(20,15,60,.28)';x.fillRect(0,0,GW,GH);x.font='30px serif';x.fillText('🌙',GW-30,26)}
+    s.pl.forEach(p=>{const k=PKEYS[p[2]],cx=px(p[1]+.5),cy=p[0]*GCELL+GCELL/2;if(k==='mine'&&!p[4])drawEm(x,PL[k].e,cx,cy+8,30,.45);else drawEm(x,PL[k].e,cx,cy,44);bar(cx,cy+26,p[3],40,'#5fd3b3')});
+    s.zs.slice().sort((a,b)=>a[1]-b[1]).forEach(z=>{const cx=px(z[2]),cy=z[1]*GCELL+GCELL/2-2,zt=ZB[ZK[z[3]]];drawEm(x,zt.e,cx,cy,z[3]>=5?58:46,zt.ghost?.7:1);
+      if(z[5]&1)drawEm(x,'🧊',cx+10,cy+16,46);if(z[5]&2)drawEm(x,'💤',cx+14,cy-22,22);bar(cx,cy-(z[3]>=5?38:32),z[4],z[3]>=5?50:36,'#ff6fa5')});
+    s.sh.forEach(h=>{drawEm(x,h[2]===1?'❄️':h[2]===2?'🌺':'🌸',px(h[1]),h[0]*GCELL+GCELL/2-6,h[2]===2?24:18)});
+    s.fx.forEach(f=>{drawEm(x,f[3],px(f[0]),f[1]*GCELL,110-f[2]*60,Math.max(0,f[2]*2))});
+    s.su.forEach(u=>{x.fillStyle='rgba(255,215,102,.55)';x.beginPath();x.arc(px(u[1]),u[2]*GCELL,19,0,7);x.fill();drawEm(x,'💗',px(u[1]),u[2]*GCELL,34)});
+    if(L.th==='night'){x.fillStyle='rgba(20,15,60,.28)';x.fillRect(0,0,GW,GH);drawEm(x,'🌙',GW-30,26,30)}
     if(L.th==='storm'){x.strokeStyle='rgba(255,255,255,.35)';x.lineWidth=1.5;const t=Date.now();for(let i=0;i<28;i++){const a=(i*53+t/5)%GW,b=(i*97+t/2.5)%GH;x.beginPath();x.moveTo(a,b);x.lineTo(a-4,b+12);x.stroke()}}}
 };
 

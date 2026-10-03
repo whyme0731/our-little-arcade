@@ -53,13 +53,13 @@ mkRace('flappy','Flappy Cupid 🕊️','Tap (or press space) to flap. Fly throug
       live({s:score,t,y:by,alive:!dead});
       if(dead){sfx.bad();setTimeout(()=>done(score),700)}}
     x.clearRect(0,0,W,H);const g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,'#ffd6ea');g.addColorStop(1,'#d9ccff');x.fillStyle=g;x.fillRect(0,0,W,H);
-    x.font='34px serif';x.textAlign='center';[[60,90,'☁️'],[230,60,'☁️'],[150,200,'💗']].forEach(([a,b,e])=>x.fillText(e,(a-t*20%400+400)%400-40,b));
+    [[60,90,'☁️'],[230,60,'☁️'],[150,200,'💗']].forEach(([a,b,e])=>drawEm(x,e,(a-t*20%400+400)%400-40,b,34));
     for(let k=0;k<200;k++){const px=pipeX(k);if(px>W+10)break;if(px+PW<-5)continue;const gy=gapY(k);
       x.fillStyle='#ff8fbf';x.beginPath();x.roundRect(px,-10,PW,gy-GAP/2+10,10);x.fill();x.beginPath();x.roundRect(px,gy+GAP/2,PW,H,10);x.fill();
       x.fillStyle='#ffc4de';x.fillRect(px+8,0,8,gy-GAP/2);x.fillRect(px+8,gy+GAP/2,8,H)}
     x.fillStyle='#c9f2c0';x.fillRect(0,H-14,W,14);
-    const pd=peer.data;if(pd&&pd.alive&&pd.t!==undefined){const gx=bx+(pd.t-t)*SP;if(gx>-30&&gx<W+30){x.globalAlpha=.45;x.font='34px serif';x.textAlign='center';x.textBaseline='middle';x.fillText('💜',gx,pd.y);x.globalAlpha=1}}
-    x.save();x.translate(bx,by);x.rotate(Math.max(-.5,Math.min(.9,vy/500)));x.font='34px serif';x.textAlign='center';x.textBaseline='middle';x.fillText('🕊️',0,0);x.restore();
+    const pd=peer.data;if(pd&&pd.alive&&pd.t!==undefined){const gx=bx+(pd.t-t)*SP;if(gx>-30&&gx<W+30){drawEm(x,'💜',gx,pd.y,34,.45)}}
+    x.save();x.translate(bx,by);x.rotate(Math.max(-.5,Math.min(.9,vy/500)));drawEm(x,'🕊️',0,0,34);x.restore();
     x.fillStyle='#4a2c5a';x.font='bold 40px Fredoka, sans-serif';x.textAlign='center';x.fillText(score,W/2,60);
     if(!started){x.font='600 18px Fredoka, sans-serif';x.fillText('TAP to start!',W/2,H/2+60)}
     raf=requestAnimationFrame(loop)}
@@ -105,7 +105,7 @@ mkRace('snake','Love Snake 🐍','Eat the 🍓 to grow. Arrow keys, swipe, or th
   $$('.dpad button',root).forEach(b=>b.onclick=()=>turn(b.dataset.d));
   let sx,sy;c.onpointerdown=e=>{sx=e.clientX;sy=e.clientY};c.onpointerup=e=>{if(sx==null)return;const dx=e.clientX-sx,dy=e.clientY-sy;if(Math.max(Math.abs(dx),Math.abs(dy))>20)turn(Math.abs(dx)>Math.abs(dy)?(dx>0?'r':'l'):(dy>0?'d':'u'));sx=null};
   const draw=()=>{x.fillStyle='#fff0f7';x.fillRect(0,0,N*CS,N*CS);for(let i=0;i<N;i++)for(let j=0;j<N;j++)if((i+j)%2){x.fillStyle='#ffe4f1';x.fillRect(i*CS,j*CS,CS,CS)}
-    x.font='18px serif';x.textAlign='center';x.textBaseline='middle';x.fillText('🍓',f[0]*CS+CS/2,f[1]*CS+CS/2+1);
+    drawEm(x,'🍓',f[0]*CS+CS/2,f[1]*CS+CS/2+1,18);
     snake.forEach((s,i)=>{x.fillStyle=i===0?'#ff6fa5':i%2?'#ff9ec4':'#ffb3d1';x.beginPath();x.roundRect(s[0]*CS+1,s[1]*CS+1,CS-2,CS-2,i===0?8:6);x.fill()});
     const h=snake[0];x.fillStyle='#fff';x.fillRect(h[0]*CS+5,h[1]*CS+6,3,3);x.fillRect(h[0]*CS+12,h[1]*CS+6,3,3)};
   const step=()=>{if(dead)return;if(q.length)dir=q.shift();const h=[snake[0][0]+dir[0],snake[0][1]+dir[1]];
