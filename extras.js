@@ -159,7 +159,7 @@ Games.wall={title:'Memory Wall 🖼️',
       ${wallPending?`<div style="margin:10px 0"><img src="${wallPending}" style="width:110px;height:110px;object-fit:cover;border-radius:10px;border:5px solid #fff"></div>
       <div class="row" style="flex-wrap:nowrap;max-width:420px;margin:0 auto"><input id="wl-c" maxlength="50" placeholder="Caption (e.g. our first call 🥰)"><button class="btn" id="wl-p">📌 Pin</button></div>`:'<p class="note">Add photos of you, your day, or something that reminds you of them. They\'re shared with your partner.</p>'}</div>
       <div class="wall">${w.slice().reverse().map((x,i)=>`<div class="polaroid" data-i="${x.id}" style="--r:${(i%5-2)*1.6}deg"><img src="${x.img}"><p>${esc(x.cap||'💗')}</p><small>${esc(x.by)} ${esc(x.date)}</small></div>`).join('')||'<p class="note center" style="grid-column:1/-1">Your wall is empty… pin the first memory! 📸</p>'}</div>`;
-    $('#wl-f').onchange=async e=>{const f=e.target.files[0];if(!f)return;if(w.length>=60){toast('Wall is full (60) — delete one first');return}wallPending=await resizeImg(f,360);this.render()};
+    $('#wl-f').onchange=async e=>{const f=e.target.files[0];if(!f)return;if(w.length>=60){toast('Wall is full (60) — delete one first');return}wallPending=await resizeImg(f,300);this.render()};
     $('#wl-p')&&($('#wl-p').onclick=()=>{const item={id:uid(),img:wallPending,cap:$('#wl-c').value.trim(),by:me.name,date:new Date().toLocaleDateString()};
       const arr=LS.get('lg_wall',[]);arr.push(item);LS.set('lg_wall',arr);Net.send('wall-add',item);wallPending=null;sfx.win();confetti(40);addLove(2);quest('create');this.render()});
     $$('.polaroid',el).forEach(p=>p.onclick=()=>{const x=w.find(y=>y.id===p.dataset.i);if(!x)return;const lb=document.createElement('div');lb.id='lightbox';
@@ -402,6 +402,7 @@ Games.reversi={title:'Reversi',
 const DGW=['cat','house','sun','flower','heart','car','tree','pizza','umbrella','moon','star','fish','cake','bicycle','ice cream','rainbow','butterfly','guitar','key','crown','balloon','cupcake','airplane','snowman','camera','bear','coffee','cloud','teddy bear','phone','rocket','strawberry','apple','elephant','giraffe','castle','candle','ring','kiss','umbrella','beach','mountain','book','glasses','spider','bird','duck','penguin','dinosaur','lightning'];
 Net.on('dg-begin',d=>{if(current==='dg')Games.dg.gBegin(d)});
 Net.on('dg-s',s=>{if(current==='dg')Games.dg.paint(s)});
+Net.on('dg-b',a=>{if(current==='dg'&&Array.isArray(a))a.slice(0,300).forEach(s=>Games.dg.paint(s))});
 Net.on('dg-clr',()=>{if(current==='dg')Games.dg.clr()});
 Net.on('dg-g',d=>{if(current==='dg')Games.dg.dGuess(d.text)});
 Net.on('dg-fin',d=>{if(current==='dg')Games.dg.fin(d.word,d.ok)});
@@ -420,11 +421,11 @@ Games.dg={title:'Draw & Guess ✏️',
       :`<div class="row" style="flex-wrap:nowrap"><input id="dg-i" maxlength="30" placeholder="Your guess…"><button class="btn" id="dg-g">Guess</button></div>`}
       <div id="dg-l" class="note center"></div>`;
     this.x=$('#dgc').getContext('2d');this.clr();
-    if(d){const c=$('#dgc');let col='#4a2c5a',down=false,last=null;const pos=e=>{const r=c.getBoundingClientRect();return[(e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height]};
+    if(d){const c=$('#dgc');const B=this._B=batcher('dg-b');let col='#4a2c5a',down=false,last=null;const pos=e=>{const r=c.getBoundingClientRect();return[(e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height]};
       $$('.sw').forEach(b=>b.onclick=()=>{col=b.dataset.c;$$('.sw').forEach(z=>z.classList.toggle('sel',z===b))});
-      c.onpointerdown=e=>{c.setPointerCapture(e.pointerId);down=true;last=pos(e);const s={a:last[0],b:last[1],c:last[0],d:last[1],k:col};this.paint(s);Net.send('dg-s',s)};
-      c.onpointermove=e=>{if(!down)return;const p=pos(e);const s={a:last[0],b:last[1],c:p[0],d:p[1],k:col};last=p;this.paint(s);Net.send('dg-s',s)};
-      c.onpointerup=c.onpointercancel=()=>down=false;$('#dg-c').onclick=()=>{this.clr();Net.send('dg-clr')}}
+      c.onpointerdown=e=>{c.setPointerCapture(e.pointerId);down=true;last=pos(e);const s={a:last[0],b:last[1],c:last[0],d:last[1],k:col};this.paint(s);B.push(s)};
+      c.onpointermove=e=>{if(!down)return;const p=pos(e);const s={a:last[0],b:last[1],c:p[0],d:p[1],k:col};last=p;this.paint(s);B.push(s)};
+      c.onpointerup=c.onpointercancel=()=>down=false;$('#dg-c').onclick=()=>{B.flush();this.clr();Net.send('dg-clr')}}
     else{const go=()=>{const t=$('#dg-i').value.trim();if(!t||S.over)return;Net.send('dg-g',{text:t});S.log.push('✗ '+t);$('#dg-i').value='';this.log()};$('#dg-g').onclick=go;$('#dg-i').onkeydown=e=>{if(e.key==='Enter')go()}}
     clearInterval(this.iv);this.iv=setInterval(()=>{if(current!=='dg'||S.over){clearInterval(this.iv);return}const el=(Date.now()-S.t0)/1000,b=$('#dg-b');b&&(b.style.width=Math.max(0,100-el/75*100)+'%');
       if(el>75){clearInterval(this.iv);if(S.role==='drawer'){Net.send('dg-fin',{word:S.word,ok:false});this.fin(S.word,false)}}},300)},

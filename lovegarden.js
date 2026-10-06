@@ -128,7 +128,7 @@ Games.garden={title:'Love Garden 🌻🧟',playing:false,isHost:true,sel:'rose',
   stop(){if(this.playing&&this.isHost){this.persist();Net.send('gd-quit')}this.halt()},
   persist(){const G=this.G;if(!G||G.over)return;const o={lvl:this.lvl,diff:this.diff,G};gdWriteSave(o);Net.send('gd-save',o)},
   /* ---------- play UI ---------- */
-  build(){this.playing=true;this.done=false;this.acc=0;this.saveT=0;this.avail=plantsFor(this.lvl);if(!this.avail.includes(this.sel))this.sel=this.avail.includes('rose')?'rose':this.avail[0];
+  build(){this._u={};this._seeds=null;this.playing=true;this.done=false;this.acc=0;this.saveT=0;this.avail=plantsFor(this.lvl);if(!this.avail.includes(this.sel))this.sel=this.avail.includes('rose')?'rose':this.avail[0];
     const L=lvCfg(this.lvl);this.L=L;
     this.el.innerHTML=`<div class="gd-top"><div class="gd-love" id="gd-l">💗 0</div><div class="gd-msg" id="gd-m"></div><div class="note" id="gd-w">${this.lvl>NLV?'Endless':'Level '+this.lvl}</div></div>
       <div class="gd-bar"><i id="gd-p" style="width:0%"></i></div>
@@ -197,11 +197,16 @@ Games.garden={title:'Love Garden 🌻🧟',playing:false,isHost:true,sel:'rose',
     else if(this.RS){const s=this.RS;s.zs.forEach(z=>z[2]-=z[6]*dt);s.sh.forEach(h=>h[1]+=(h[2]===2?5:4.2)*dt);s.mo.forEach(m=>{if(m[2])m[1]+=7*dt});s.fx.forEach(f=>f[2]-=dt)}
     if(this.RS){this.draw(this.RS);this.ui();if(this.RS.over&&!this.done)this.finish(this.RS.over)}
     if(this.playing)this.raf=requestAnimationFrame(t=>this.loop(t))},
-  ui(){const s=this.RS;if(!s)return;const l=$('#gd-l');if(!l)return;l.textContent='💗 '+s.love;
-    $('#gd-m').textContent=s.msg||'';
-    $('#gd-w').textContent=s.lw?`Lv ${s.lvl} · Wave ${s.wave}/${s.lw} · 🧟 ${s.left}`:`Endless · Wave ${s.wave} · 🧟 ${s.left}`;
-    $('#gd-p').style.width=(s.lw?(s.total?(1-s.left/s.total)*100:0):Math.min(100,s.wave*5))+'%';
-    $$('#gd-sd .seed').forEach(b=>{const k=b.dataset.k;b.classList.toggle('sel',this.sel===k);if(k==='shovel')return;const P=PL[k];b.classList.toggle('poor',s.love<P.cost);b.querySelector('.cd').style.height=((s.cds[k]||0)/P.cd*100)+'%'})},
+  /* only touches the screen for things that actually changed (this runs every frame) */
+  ui(){const s=this.RS;if(!s)return;const l=$('#gd-l');if(!l)return;const U=this._u||(this._u={});
+    const set=(k,el,prop,v)=>{if(U[k]!==v){U[k]=v;if(prop==='w')el.style.width=v;else el.textContent=v}};
+    set('l',l,'t','💗 '+s.love);set('m',$('#gd-m'),'t',s.msg||'');
+    set('w',$('#gd-w'),'t',s.lw?`Lv ${s.lvl} · Wave ${s.wave}/${s.lw} · 🧟 ${s.left}`:`Endless · Wave ${s.wave} · 🧟 ${s.left}`);
+    set('p',$('#gd-p'),'w',Math.round((s.lw?(s.total?(1-s.left/s.total)*100:0):Math.min(100,s.wave*5))*2)/2+'%');
+    const seeds=this._seeds||(this._seeds=$$('#gd-sd .seed'));
+    for(const b of seeds){const k=b.dataset.k;const sel=this.sel===k;if(U['s'+k]!==sel){U['s'+k]=sel;b.classList.toggle('sel',sel)}if(k==='shovel')continue;const P=PL[k];
+      const poor=s.love<P.cost;if(U['o'+k]!==poor){U['o'+k]=poor;b.classList.toggle('poor',poor)}
+      const h=Math.round((s.cds[k]||0)/P.cd*20)*5+'%';if(U['h'+k]!==h){U['h'+k]=h;b.querySelector('.cd').style.height=h}}},
   /* ---------- results + save progress ---------- */
   finish(res){this.done=true;const win=res==='win',s=this.RS,lvl=this.lvl,endless=lvl>NLV;cancelAnimationFrame(this.raf);this.playing=false;
     gdWriteSave(null);if(this.isHost)Net.send('gd-save',null);

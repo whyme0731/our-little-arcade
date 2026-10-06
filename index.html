@@ -688,7 +688,7 @@ const _relayBase=()=>(CFG.relaySecure?'https://':'http://')+CFG.relay;
 /* ask YOUR relay for relay-server (TURN) credentials. A sleeping free relay takes up to ~60s to wake, so we wait patiently and cache the result for 20h. */
 Net.fetchIce=async function(ms=70000){if(!CFG.relay)return false;
   try{const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),ms);const r=await fetch(_relayBase()+'/turn',{signal:ctl.signal,cache:'no-store'});clearTimeout(tm);const j=await r.json();
-    if(j&&Array.isArray(j.iceServers)&&j.iceServers.length){this.setIce(j.iceServers);if(j.turn){try{localStorage.setItem('lg_ice',JSON.stringify({exp:Date.now()+20*36e5,servers:j.iceServers}))}catch{}}dlog('relay credentials: '+(j.turn?'TURN ready':'no TURN (STUN only)'));return!!j.turn}}
+    if(j&&Array.isArray(j.iceServers)&&j.iceServers.length){this.setIce(j.iceServers);if(j.turn){try{const life=(+j.ttl||86400)*1000*0.85,now=Date.now();localStorage.setItem('lg_ice',JSON.stringify({exp:now+life,born:now,servers:j.iceServers}))}catch{}}dlog('relay credentials: '+(j.turn?'TURN ready':'no TURN (STUN only)'));return!!j.turn}}
   catch(e){dlog('relay credentials failed: '+(e&&e.name))}return false};
 /* make sure we have TURN, retrying (used before a video call too) */
 Net.ensureTurn=async function(ms=45000){if(this.hasTurn||!CFG.relay)return this.hasTurn;if(!this._ensure)this._ensure=(async()=>{for(let k=0;k<3&&!this.hasTurn;k++){await this.fetchIce(ms);if(!this.hasTurn)await new Promise(r=>setTimeout(r,2000))}this._ensure=null})();await this._ensure;return this.hasTurn};
@@ -704,10 +704,12 @@ Net.iceReady=(async()=>{
   let cached=null;try{const o=JSON.parse(localStorage.getItem('lg_ice'));if(o&&o.exp>Date.now()+36e5&&Array.isArray(o.servers))cached=o}catch{}
   if(cached){Net.setIce(cached.servers);dlog('relay credentials from cache');
     fetch(_relayBase()+'/health',{mode:'no-cors',cache:'no-store'}).catch(()=>{});            // wake the relay up in the background
-    if(cached.exp<Date.now()+10*36e5)Net.fetchIce(70000);return}
+    /* refresh quietly once less than 40% of its life is left (the relay may need a minute to wake — nothing waits for it) */
+    if(cached.exp-Date.now()<(cached.exp-(cached.born||cached.exp-20*36e5))*0.4)Net.fetchIce(70000);return}
   await Net.ensureTurn()})();
 /* keep the free relay awake while the page is open */
-setInterval(()=>{if(CFG.relay&&document.visibilityState==='visible')fetch(_relayBase()+'/health',{mode:'no-cors',cache:'no-store'}).catch(()=>{})},4*60*1000);
+/* (visible, or connected with the screen off — a hidden page's timers still fire every few minutes) */
+setInterval(()=>{if(CFG.relay&&(document.visibilityState==='visible'||Net.connected))fetch(_relayBase()+'/health',{mode:'no-cors',cache:'no-store'}).catch(()=>{})},4*60*1000);
 /* connection watchdog: a ping every 5s; if nothing at all arrives for 25s the link is dead (phone slept / Wi-Fi switched) */
 setInterval(()=>{if(Net.connected){Net.send('ping',1);Net.checkLink();if(Net.connected)Net.saveSess()}
   else{renderNetBar();if(Net.role==='host'&&Net.code&&!Net.leaving)Net.hostEnsure()}},5000);
@@ -718,6 +720,8 @@ Net.on('ping',()=>{});
 document.addEventListener('visibilitychange',()=>{dlog('page '+document.visibilityState);if(document.visibilityState==='visible'){Net.lastRx=Date.now();if(!Net.connected)Net.kick();else setTimeout(()=>Net.checkLink(),1500)}});
 addEventListener('online',()=>{dlog('network online');Net.kick()});addEventListener('offline',()=>dlog('network offline'));
 addEventListener('pageshow',e=>{if(e.persisted){dlog('page restored from cache');Net.kick()}});
+/* many tiny messages (every pointer movement while drawing) are bundled into one every ~45ms */
+function batcher(type){let q=[],t=0;const flush=()=>{t=0;if(q.length)Net.send(type,q.splice(0))};return{push(x){q.push(x);if(!t)t=setTimeout(flush,45)},flush(){clearTimeout(t);flush()}}}
 function pn(){return me.nick||Net.realName||'your love'}
 function setStatus(){$('#dot').classList.toggle('on',Net.connected);
   $('#statusTxt').textContent=Net.connected?('Playing with '+Net.partner+' 🔒'):(Net.sess()&&!Net.stopRetry?'Reconnecting…':'Not connected');renderNetBar()}
@@ -795,7 +799,7 @@ function renderCd(){const v=LS.get('lg_meet',null),box=$('#cd');
   if(diff<=0){box.innerHTML='<h2>🎉 Today is the day!! 🎉</h2>';return}
   const d=Math.floor(diff/864e5),h=Math.floor(diff/36e5)%24,m=Math.floor(diff/6e4)%60,s=Math.floor(diff/1e3)%60;
   box.innerHTML=[[d,'days'],[h,'hours'],[m,'mins'],[s,'secs']].map(([n,l])=>`<div class="cd"><b>${n}</b><span>${l}</span></div>`).join('')}
-setInterval(renderCd,1000);
+setInterval(()=>{if(!$('#hub').classList.contains('hidden'))renderCd()},1000);
 if(LS.get('lg_meet',null))$('#meetIn').value=LS.get('lg_meet');
 function renderSince(){const v=LS.get('lg_since',null),box=$('#since');
   if(!v){box.innerHTML='<p class="note">When did your story begin? 🥰</p>';return}
@@ -1074,6 +1078,9 @@ Games.bs={title:'Battleship',
 Games.rps={title:'Rock Paper Scissors',
   start(el){const S=this.s={mine:null,theirs:null,sm:0,st:0,busy:false};this.el=el;
     Net.on('rps-pick',p=>{if(current!=='rps')return;S.theirs=p;this.go()});this.draw()},
+  /* if they picked before you opened the game, they hand you their pick when you arrive */
+  snap(){const S=this.s;return S&&S.mine&&!S.busy?{p:S.mine}:null},
+  restore(d){const S=this.s;if(d&&d.p&&S&&!S.theirs&&!S.busy){S.theirs=d.p;this.go()}},
   draw(msg){const S=this.s,el=this.el;if(!$('#gameBody'))return;
     el.innerHTML=`<div class="scores"><div class="score">You: ${S.sm}</div><div class="score">${esc(Net.connected?Net.partner:'Computer')}: ${S.st}</div></div>
       <div class="arena" id="arena"><span id="am">❔</span><span id="at">❔</span></div>
@@ -1140,18 +1147,18 @@ Games.draw={title:'Draw Together',
     $('#dsz').oninput=e=>S.size=+e.target.value;
     $('#dcl').onclick=()=>{this.clear(true)};
     $('#dsv').onclick=()=>{const a=document.createElement('a');a.download='our-drawing.png';a.href=c.toDataURL('image/png');a.click()};
-    let last=null,down=false;
+    let last=null,down=false;const B=this._B=batcher('dr-b');
     const pos=e=>{const r=c.getBoundingClientRect();return[(e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height]};
     c.onpointerdown=e=>{c.setPointerCapture(e.pointerId);down=true;const p=pos(e);
-      if(S.stamp){const s={st:S.stamp,x:p[0],y:p[1],z:S.size};this.apply(s);Net.send('dr',s);down=false;return}
-      last=p;const s={x1:p[0],y1:p[1],x2:p[0],y2:p[1],c:S.color,w:S.size};this.apply(s);Net.send('dr',s)};
-    c.onpointermove=e=>{if(!down||!last)return;const p=pos(e);const s={x1:last[0],y1:last[1],x2:p[0],y2:p[1],c:S.color,w:S.size};last=p;this.apply(s);Net.send('dr',s)};
+      if(S.stamp){const s={st:S.stamp,x:p[0],y:p[1],z:S.size};this.apply(s);B.push(s);down=false;return}
+      last=p;const s={x1:p[0],y1:p[1],x2:p[0],y2:p[1],c:S.color,w:S.size};this.apply(s);B.push(s)};
+    c.onpointermove=e=>{if(!down||!last)return;const p=pos(e);const s={x1:last[0],y1:last[1],x2:p[0],y2:p[1],c:S.color,w:S.size};last=p;this.apply(s);B.push(s)};
     c.onpointerup=c.onpointercancel=()=>{down=false;last=null};
-    Net.on('dr',s=>current==='draw'&&this.apply(s));Net.on('dr-clear',()=>current==='draw'&&this.clear(false))},
+    Net.on('dr',s=>current==='draw'&&this.apply(s));Net.on('dr-b',a=>{if(current==='draw'&&Array.isArray(a))a.slice(0,300).forEach(s=>this.apply(s))});Net.on('dr-clear',()=>current==='draw'&&this.clear(false))},
   apply(s){const x=this.x;if(!x)return;this.s.strokes.push(s);const W=900,H=600;
     if(s.st){x.font=(30+s.z*3)+'px serif';x.textAlign='center';x.textBaseline='middle';x.fillText(s.st,s.x*W,s.y*H);return}
     x.strokeStyle=s.c;x.lineWidth=s.w;x.lineCap='round';x.beginPath();x.moveTo(s.x1*W,s.y1*H);x.lineTo(s.x2*W+.01,s.y2*H);x.stroke()},
-  clear(send){const x=this.x;x.fillStyle='#fffdf5';x.fillRect(0,0,900,600);this.s.strokes=[];if(send)Net.send('dr-clear')},
+  clear(send){const x=this.x;x.fillStyle='#fffdf5';x.fillRect(0,0,900,600);this.s.strokes=[];if(send){this._B&&this._B.flush();Net.send('dr-clear')}},
   snap(){const s=this.s.strokes;return s.length?s.slice(-4000):null},
   restore(d){this.clear(false);d.forEach(s=>this.apply(s))},
   stop(){}};
